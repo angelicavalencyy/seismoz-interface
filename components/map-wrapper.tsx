@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { EarthquakeMapPoint, EarthquakeRecord } from "@/lib/earthquake";
 
 const MapRealTime = dynamic(() => import("./map-real-time"), {
   ssr: false,
@@ -11,6 +12,23 @@ const MapRealTime = dynamic(() => import("./map-real-time"), {
   ),
 });
 
-export default function MapWrapper() {
-  return <MapRealTime />;
+export default function MapWrapper({
+  earthquakes,
+  selectedEarthquake,
+  onSelectEarthquake,
+  onZoomChange,
+}: {
+  earthquakes: EarthquakeMapPoint[]
+  selectedEarthquake: EarthquakeRecord | null
+  onSelectEarthquake: (record: EarthquakeRecord) => void
+  onZoomChange: (zoom: number) => void
+}) {
+  return (
+    <MapRealTime
+      earthquakes={earthquakes}
+      selectedEarthquake={selectedEarthquake}
+      onSelectEarthquake={onSelectEarthquake}
+      onZoomChange={onZoomChange}
+    />
+  );
 }

@@ -1,0 +1,33 @@
+export const preferredColumns = [
+  "DateTime",
+  "Tanggal",
+  "Jam",
+  "Wilayah",
+  "Lintang",
+  "Bujur",
+  "Coordinates",
+  "Koordinat",
+  "Magnitude",
+  "Kedalaman",
+  "Dirasakan",
+  "risk_level",
+  "risk_score",
+  "cluster",
+] as const
+
+export const columnLabels: Record<string, string> = {
+  DateTime: "Date Time",
+  Tanggal: "Tanggal",
+  Jam: "Jam",
+  Wilayah: "Wilayah",
+  Lintang: "Lintang",
+  Bujur: "Bujur",
+  Coordinates: "Coordinates",
+  Koordinat: "Koordinat",
+  Magnitude: "Magnitude",
+  Kedalaman: "Kedalaman",
+  Dirasakan: "Dirasakan",
+  risk_level: "Risk Level",
+  risk_score: "Risk Score",
+  cluster: "Cluster",
+}

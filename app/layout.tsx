@@ -38,12 +38,12 @@ export default function RootLayout({
         "font-sans"
       )}
     >
-      <body className="h-full bg-background"> {/* Gunakan h-full agar sidebar mentok ke bawah */}
+      <body className="min-h-dvh overflow-x-hidden bg-background"> {/* Gunakan h-full agar sidebar mentok ke bawah */}
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset>
+          <SidebarInset className="min-h-dvh min-w-0 overflow-x-hidden">
             <HeaderRoutes />
-            <main className="flex flex-1 flex-col p-6 gap-8">
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-8 overflow-x-hidden p-6">
               <HeaderLocation />
               {children}
             </main>
