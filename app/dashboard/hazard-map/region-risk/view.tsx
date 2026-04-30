@@ -1,24 +1,164 @@
 "use client"
 
-import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useState } from "react"
+import dynamic from "next/dynamic"
+import { Badge } from "@/components/ui/badge"
+import { normalizeRiskMapGeojsonFeatures, type RiskMapGeojsonFeature } from "@/lib/historical-data/geojson-api"
+import { getRiskMapGeojsonFeatureRiskLevel, getRiskMapGeojsonFeatureRiskScore } from "@/lib/historical-data/geojson-api"
 
-// Import komponen Map secara dinamis
-const MapWithNoSSR = dynamic(() => import('@/components/map-real-time'), {
+const RegionRiskChoroplethMap = dynamic(() => import("@/components/region-risk-choropleth-map"), {
     ssr: false,
-    loading: () => <div className="h-full w-full bg-muted animate-pulse flex items-center justify-center">Loading Map...</div>
-});
-
+    loading: () => <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">Memuat peta...</div>,
+})
 
 export default function RegionRiskMap() {
-    return (
-        <div className="flex flex-col flex-1 items-start justify-start font-sans dark:bg-black  dark:border-gray-800">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Regional Risk Map</h1>
-            <p className="text-gray-600 dark:text-gray-400">This is the real-time map analysis page.</p>
-            <div className="flex flex-col gap-4 h-[calc(100vh-150px)] overflow-hidden rounded-xl shadow-lg">
+    const [features, setFeatures] = useState<RiskMapGeojsonFeature[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-                {/* Container Peta */}
-                <MapWithNoSSR />
+    useEffect(() => {
+        const controller = new AbortController()
+        let isActive = true
+
+        async function loadRegionRiskGeojson() {
+            try {
+                setLoading(true)
+                setError(null)
+
+                const response = await fetch("/api/risk-map/geojson", {
+                    signal: controller.signal,
+                    cache: "no-store",
+                })
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load region risk geojson (${response.status})`)
+                }
+
+                const payload = await response.json()
+
+                if (!isActive) {
+                    return
+                }
+
+                setFeatures(normalizeRiskMapGeojsonFeatures(payload))
+            } catch (fetchError) {
+                if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
+                    return
+                }
+
+                if (!isActive) {
+                    return
+                }
+
+                setError("Gagal memuat geojson region-risk dari API.")
+            } finally {
+                if (isActive) {
+                    setLoading(false)
+                }
+            }
+        }
+
+        void loadRegionRiskGeojson()
+
+        return () => {
+            isActive = false
+            controller.abort()
+        }
+    }, [])
+
+    const riskLevelCounts = useMemo(() => {
+        return features.reduce<Record<string, number>>((accumulator, feature) => {
+            const riskLevel = getRiskMapGeojsonFeatureRiskLevel(feature)
+            accumulator[riskLevel] = (accumulator[riskLevel] ?? 0) + 1
+            return accumulator
+        }, {})
+    }, [features])
+
+    const riskScoreSummary = useMemo(() => {
+        const scores = features
+            .map((feature) => getRiskMapGeojsonFeatureRiskScore(feature))
+            .filter((value): value is number => typeof value === "number")
+
+        if (scores.length === 0) {
+            return null
+        }
+
+        const maxScore = Math.max(...scores)
+        const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+
+        return { maxScore, avgScore }
+    }, [features])
+
+    return (
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4 font-sans text-foreground">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-2xl font-bold text-foreground">Regional Risk Map</h1>
+                <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                    <span>Total Wilayah: {features.length}</span>
+                </Badge>
+                {Object.entries(riskLevelCounts).map(([riskLevel, count]) => (
+                    <Badge key={riskLevel} variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>
+                            {riskLevel}: {count}
+                        </span>
+                    </Badge>
+                ))}
+                {riskScoreSummary ? (
+                    <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>Skor Rata-rata: {riskScoreSummary.avgScore.toFixed(3)}</span>
+                    </Badge>
+                ) : null}
+            </div>
+
+            <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_280px]">
+                <div className="min-h-[68vh] overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                    {loading ? (
+                        <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">Memuat peta region-risk...</div>
+                    ) : error ? (
+                        <div className="flex h-full items-center justify-center p-6 text-sm text-rose-700">{error}</div>
+                    ) : (
+                        <RegionRiskChoroplethMap features={features} />
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <div>
+                        <h2 className="text-sm font-semibold text-foreground">Legenda</h2>
+                        <p className="text-xs text-muted-foreground">Skema warna choropleth</p>
+                    </div>
+
+                    <div className="space-y-2 text-sm text-foreground">
+                        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-green-700">
+                            <span className="h-3 w-3 rounded-full bg-green-500" />
+                            Rendah
+                        </div>
+                        <div className="flex items-center gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-3 py-2 text-yellow-700">
+                            <span className="h-3 w-3 rounded-full bg-yellow-500" />
+                            Sedang
+                        </div>
+                        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-red-700">
+                            <span className="h-3 w-3 rounded-full bg-red-500" />
+                            Tinggi
+                        </div>
+                    </div>
+
+                    <div className="mt-2 rounded-xl border border-dashed border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+                        Arahkan kursor ke wilayah untuk melihat nama, level risiko, dan skor risikonya.
+                    </div>
+
+                    {riskScoreSummary ? (
+                        <div className="rounded-xl border border-border bg-background p-3 text-sm text-foreground">
+                            <div className="font-medium">Ringkasan Skor</div>
+                            <div className="mt-1 text-sm text-muted-foreground">Rata-rata: {riskScoreSummary.avgScore.toFixed(3)}</div>
+                            <div className="text-sm text-muted-foreground">Tertinggi: {riskScoreSummary.maxScore.toFixed(3)}</div>
+                        </div>
+                    ) : null}
+                </div>
             </div>
         </div>
-    );
+    )
 }
