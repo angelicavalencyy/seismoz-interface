@@ -117,6 +117,10 @@ export function getEarthquakeLocation(record: EarthquakeRecord): string {
   return record.koordinat ?? record.Koordinat ?? record.Coordinates ?? "Tidak tersedia"
 }
 
+export function getEarthquakeRiskLevel(record: EarthquakeRecord): string {
+  return (record.risk_level ?? "Tidak diketahui").trim()
+}
+
 export function getEarthquakeRecordId(record: EarthquakeRecord, index?: number): string {
   return [
     record.id,

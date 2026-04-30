@@ -3,21 +3,27 @@
 import { useEffect, useMemo, useRef } from "react"
 import { divIcon, type Marker as LeafletMarker } from "leaflet"
 import { MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet"
-import { getEarthquakeLocation, type EarthquakeMapPoint, type EarthquakeRecord } from "@/lib/earthquake"
+import { getEarthquakeLocation, getEarthquakeRiskLevel, type EarthquakeMapPoint, type EarthquakeRecord } from "@/lib/earthquake"
 import "leaflet/dist/leaflet.css"
 
-function createPurpleIcon(selected: boolean) {
+function createRiskLevelIcon(riskLevel: string, selected: boolean) {
+    const tone = riskLevel === "Tinggi" ? "red" : riskLevel === "Sedang" ? "yellow" : "green"
+        const haloClass = tone === "red" ? "bg-red-500/20" : tone === "yellow" ? "bg-yellow-500/20" : "bg-green-500/20"
+        const innerClass = tone === "red" ? "bg-red-500" : tone === "yellow" ? "bg-yellow-500" : "bg-green-500"
+        const ringClass = tone === "red" ? "border-red-400" : tone === "yellow" ? "border-yellow-400" : "border-green-400"
+
     return divIcon({
         className: "",
         html: `
-      <div class="relative flex h-6 w-6 items-center justify-center">
-        <span class="absolute h-10 w-10 rounded-full ${selected ? "bg-purple-500/20" : "bg-purple-500/15"}"></span>
-        <span class="absolute h-4 w-4 rounded-full border-2 border-white ${selected ? "bg-purple-700" : "bg-purple-500"} shadow-lg"></span>
-      </div>
+            <div class="relative flex h-6 w-6 items-center justify-center">
+                <span class="absolute h-10 w-10 rounded-full ${selected ? haloClass : haloClass.replace("/20", "/15")}"></span>
+                <span class="absolute h-5 w-5 rounded-full border-2 border-white ${selected ? ringClass : innerClass} shadow-lg"></span>
+                <span class="absolute h-2.5 w-2.5 rounded-full border border-white/90 ${innerClass}"></span>
+            </div>
     `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -12],
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
+                popupAnchor: [0, -12],
     })
 }
 
@@ -68,7 +74,7 @@ function MapSync({
                     <Marker
                         key={point.id}
                         position={[point.latitude, point.longitude]}
-                        icon={createPurpleIcon(isSelected)}
+                        icon={createRiskLevelIcon(getEarthquakeRiskLevel(point.record), isSelected)}
                         ref={(marker) => {
                             if (marker) {
                                 markerRefs.current.set(point.id, marker)
@@ -89,8 +95,8 @@ function MapSync({
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex flex-grow items-center justify-between">
                                         <p className="text-[10px] font-medium uppercase tracking-wide text-primary">Info Gempa</p>
-                                        <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
-                                            Risiko Ancaman {point.record.risk_level ?? "Rendah"}
+                                        <span className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                                            Risiko Ancaman {getEarthquakeRiskLevel(point.record)}
                                         </span>
                                     </div>
                                 </div>

@@ -8,6 +8,7 @@ import { getEarthquakeLocation, getEarthquakeRecordId, type EarthquakeRecord } f
 import {
   Activity,
   Calendar,
+  AlertTriangle,
   MapPin,
   Clock,
   Sparkles,
@@ -32,19 +33,31 @@ export function EarthquakeCardItem({
     {
       label: string
       dots: string[]
+      badgeClassName: string
+      icon: typeof Sparkles
+      iconClassName: string
     }
   > = {
     Rendah: {
       label: "Rendah",
       dots: ["bg-green-500", "bg-green-400", "bg-gray-300"],
+      badgeClassName: "border border-green-200 bg-green-50 text-green-700 hover:bg-green-50",
+      icon: Sparkles,
+      iconClassName: "text-green-600",
     },
     Sedang: {
       label: "Sedang",
       dots: ["bg-yellow-500", "bg-yellow-400", "bg-gray-300"],
+      badgeClassName: "border border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-50",
+      icon: Activity,
+      iconClassName: "text-yellow-600",
     },
     Tinggi: {
       label: "Tinggi",
       dots: ["bg-red-500", "bg-red-400", "bg-gray-300"],
+      badgeClassName: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-50",
+      icon: AlertTriangle,
+      iconClassName: "text-red-600",
     },
   } as const
 
@@ -62,15 +75,10 @@ export function EarthquakeCardItem({
     >
       <CardContent className="space-y-4 p-5">
         <div className="flex items-center justify-between gap-3">
-          <Badge variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-100">
-            <Sparkles className="mr-1 size-3" />
+          <Badge variant="secondary" className={cn(availability.badgeClassName, "gap-1") }>
+            <availability.icon className={cn("size-3", availability.iconClassName)} />
             Risiko Ancaman {availability.label}
           </Badge>
-          <div className="flex gap-1">
-            {availability.dots.map((dotClass, index) => (
-              <span key={index} className={cn("h-2 w-6 rounded-full", dotClass)} />
-            ))}
-          </div>
         </div>
 
         <div className="space-y-1">
