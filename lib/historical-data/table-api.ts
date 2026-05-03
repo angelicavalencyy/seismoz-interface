@@ -1,4 +1,4 @@
-import { toDateKey, formatCellValue } from "./utils"
+import { formatCellValue, normalizeRiskLevelLabel, toDateKey } from "./utils"
 
 export interface RiskMapTableRecord {
   id_kabupaten?: string
@@ -111,7 +111,7 @@ export function getRiskMapTableKabupatenName(record: RiskMapTableRecord): string
 }
 
 export function getRiskMapTableRiskLevel(record: RiskMapTableRecord): string {
-  return (record.risk_level ?? record.Risk_Level ?? "Tidak diketahui").trim()
+  return normalizeRiskLevelLabel(record.risk_level ?? record.Risk_Level)
 }
 
 export { formatCellValue }

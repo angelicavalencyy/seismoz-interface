@@ -69,6 +69,40 @@ export function getTodayDateKey(): string {
   return `${year}-${month}-${day}`
 }
 
+export function normalizeRiskLevelLabel(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "Tidak diketahui"
+  }
+
+  const text = String(value).trim()
+
+  if (!text) {
+    return "Tidak diketahui"
+  }
+
+  const normalized = text.toLowerCase().replace(/\s+/g, " ")
+
+  if (normalized === "rendah" || normalized === "low" || normalized === "low risk" || normalized === "1") {
+    return "Rendah"
+  }
+
+  if (
+    normalized === "sedang" ||
+    normalized === "medium" ||
+    normalized === "moderate" ||
+    normalized === "menengah" ||
+    normalized === "2"
+  ) {
+    return "Sedang"
+  }
+
+  if (normalized === "tinggi" || normalized === "high" || normalized === "high risk" || normalized === "3") {
+    return "Tinggi"
+  }
+
+  return text
+}
+
 export function formatCellValue(value: unknown): string {
   if (value === null || value === undefined || value === "") {
     return "-"
