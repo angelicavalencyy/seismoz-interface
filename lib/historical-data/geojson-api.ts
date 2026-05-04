@@ -1,4 +1,4 @@
-import { toDateKey } from "./utils"
+import { toDateKey } from "../utils"
 import type { RiskMapTableRecord } from "./table-api"
 
 export type RiskMapGeojsonFeature = {
