@@ -69,8 +69,8 @@ export function EarthquakeCardItem({
   return (
     <Card
       className={cn(
-        "w-full rounded-2xl border border-slate-200 bg-white/90 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-md",
-        selected && "border border-purple-500 shadow-lg shadow-purple-300/20"
+        "w-full rounded-2xl border border-slate-200 bg-white/90 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md",
+        selected && "border border-blue-500 shadow-lg shadow-blue-300/20"
       )}
     >
       <CardContent className="space-y-4 p-5">
@@ -86,7 +86,7 @@ export function EarthquakeCardItem({
             {wilayah}
           </h3>
           <div className="flex items-start gap-2 text-sm text-slate-500">
-            <MapPin className="mt-0.5 size-4 shrink-0 text-purple-500" />
+            <MapPin className="mt-0.5 size-4 shrink-0 text-blue-500" />
             <span className="line-clamp-2 break-words">{getEarthquakeLocation(data)}</span>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function EarthquakeCardItem({
           <Button
             size="sm"
             variant="outline"
-            className="border-purple-200 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+            className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50 hover:text-blue-800"
             onClick={onClick}
           >
             Lihat detail

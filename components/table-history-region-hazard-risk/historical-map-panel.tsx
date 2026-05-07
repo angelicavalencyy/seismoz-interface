@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { RiskMapGeoPoint } from "@/lib/historical-data/geojson-api"
-import { getRiskMapTableKabupatenName } from "@/lib/historical-data/table-api"
+import { getRiskMapTableCluster, getRiskMapTableKabupatenName } from "@/lib/historical-data/table-api"
 
-const HistoricalDataMap = dynamic(() => import("./historical-data-map"), {
+const HistoricalDataMap = dynamic(() => import("@/components/table-history-region-hazard-risk/historical-data-map"), {
   ssr: false,
   loading: () => <div className="flex h-full w-full items-center justify-center">Loading Map...</div>,
 })
@@ -34,7 +34,7 @@ function HistoricalDataCardItem({
           <Badge variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-100">
             {point.record.risk_level ?? "Rendah"}
           </Badge>
-          <span className="text-xs text-slate-500">Cluster {point.record.cluster ?? "-"}</span>
+          <span className="text-xs text-slate-500">Cluster {getRiskMapTableCluster(point.record) ?? "-"}</span>
         </div>
 
         <div className="space-y-1">

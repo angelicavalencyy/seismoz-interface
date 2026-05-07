@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { divIcon, type Marker as LeafletMarker } from "leaflet"
 import { MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet"
 import type { RiskMapGeoPoint } from "@/lib/historical-data/geojson-api"
-import { getRiskMapTableKabupatenName } from "@/lib/historical-data/table-api"
+import { getRiskMapTableCluster, getRiskMapTableKabupatenName } from "@/lib/historical-data/table-api"
 import "leaflet/dist/leaflet.css"
 
 function createPurpleIcon(selected: boolean) {
@@ -100,7 +100,7 @@ function HistoricalDataMapSync({
                   </div>
                   <div className="mt-1 flex items-start justify-between gap-3">
                     <span className="text-muted-foreground">Cluster</span>
-                    <span className="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">{point.record.cluster ?? "-"}</span>
+                    <span className="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">{getRiskMapTableCluster(point.record) ?? "-"}</span>
                   </div>
                 </div>
               </div>
@@ -123,8 +123,6 @@ export default function HistoricalDataMap({
   onSelectPoint: (id: string) => void
   onZoomChange: (zoom: number) => void
 }) {
-  const selected = useMemo(() => selectedPoint, [selectedPoint])
-
   return (
     <MapContainer center={[-2.5, 118]} zoom={5.8} minZoom={4.5} maxZoom={9} zoomControl className="h-full w-full">
       <TileLayer
@@ -133,7 +131,7 @@ export default function HistoricalDataMap({
         maxZoom={22}
       />
 
-      <HistoricalDataMapSync points={points} selectedPoint={selected} onSelectPoint={onSelectPoint} onZoomChange={onZoomChange} />
+      <HistoricalDataMapSync points={points} selectedPoint={selectedPoint} onSelectPoint={onSelectPoint} onZoomChange={onZoomChange} />
     </MapContainer>
   )
 }

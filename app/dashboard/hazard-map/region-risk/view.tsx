@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { normalizeRiskMapGeojsonFeatures, type RiskMapGeojsonFeature } from "@/lib/historical-data/geojson-api"
 import { getRiskMapGeojsonFeatureRiskLevel, getRiskMapGeojsonFeatureRiskScore } from "@/lib/historical-data/geojson-api"
+import { cn } from "@/lib/utils"
 
 const RegionRiskChoroplethMap = dynamic(() => import("@/components/region-risk-choropleth-map"), {
     ssr: false,
@@ -15,6 +17,25 @@ export default function RegionRiskMap() {
     const [features, setFeatures] = useState<RiskMapGeojsonFeature[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [selectedRiskLevel, setSelectedRiskLevel] = useState<"all" | "Rendah" | "Sedang" | "Tinggi">("all")
+
+    const riskLevelOptions: Array<{ value: "all" | "Rendah" | "Sedang" | "Tinggi"; label: string }> = [
+        { value: "all", label: "Semua" },
+        { value: "Rendah", label: "Rendah" },
+        { value: "Sedang", label: "Sedang" },
+        { value: "Tinggi", label: "Tinggi" },
+    ]
+
+    const riskLevelBadgeClassName = (level: "Rendah" | "Sedang" | "Tinggi") => {
+        switch (level) {
+            case "Rendah":
+                return "border border-green-200 bg-green-50 text-green-700 hover:bg-green-50"
+            case "Sedang":
+                return "border border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
+            case "Tinggi":
+                return "border border-red-200 bg-red-50 text-red-700 hover:bg-red-50"
+        }
+    }
 
     useEffect(() => {
         const controller = new AbortController()
@@ -74,6 +95,14 @@ export default function RegionRiskMap() {
         }, {})
     }, [features])
 
+    const filteredFeatures = useMemo(() => {
+        if (selectedRiskLevel === "all") {
+            return features
+        }
+
+        return features.filter((feature) => getRiskMapGeojsonFeatureRiskLevel(feature) === selectedRiskLevel)
+    }, [features, selectedRiskLevel])
+
     const riskScoreSummary = useMemo(() => {
         const scores = features
             .map((feature) => getRiskMapGeojsonFeatureRiskScore(feature))
@@ -92,26 +121,55 @@ export default function RegionRiskMap() {
     return (
         <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4 font-sans text-foreground">
             <div className="flex flex-col gap-2">
-                <h1 className="text-2xl font-bold text-foreground">Regional Risk Map</h1>
-                <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p>
+                <h1 className="text-2xl font-bold text-foreground">Peta Kerawanan Wilayah</h1>
+                {/* <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p> */}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
-                    <span>Total Wilayah: {features.length}</span>
-                </Badge>
-                {Object.entries(riskLevelCounts).map(([riskLevel, count]) => (
-                    <Badge key={riskLevel} variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
-                        <span>
-                            {riskLevel}: {count}
-                        </span>
-                    </Badge>
-                ))}
-                {riskScoreSummary ? (
+            <div className="flex flex-col gap-4">
+                <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
-                        <span>Skor Rata-rata: {riskScoreSummary.avgScore.toFixed(3)}</span>
+                        <span>Total Wilayah: {features.length}</span>
                     </Badge>
-                ) : null}
+                    <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>Hasil Filter: {filteredFeatures.length}</span>
+                    </Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    {Object.entries(riskLevelCounts).map(([riskLevel, count]) => (
+                        <Badge key={riskLevel} variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                            <span>
+                                {riskLevel}: {count}
+                            </span>
+                        </Badge>
+                    ))}
+                    {riskScoreSummary ? (
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                            <span>Skor Rata-rata: {riskScoreSummary.avgScore.toFixed(3)}</span>
+                        </Badge>
+                    ) : null}
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold tracking-wide text-foreground">Filter Risk Level</label>
+                <Tabs defaultValue="all" value={selectedRiskLevel} onValueChange={(value) => setSelectedRiskLevel(value as "all" | "Tinggi" | "Sedang" | "Rendah")}>
+                    <TabsList className="w-fit">
+                        {riskLevelOptions.map((option) => (
+                            <TabsTrigger key={option.value} value={option.value}>
+                                {option.label}
+                                {option.value !== "all" && riskLevelCounts[option.value] !== undefined && (
+                                    <Badge
+                                        variant="outline"
+                                        className={cn("ml-2 h-5 rounded-full px-2 text-[10px]", riskLevelBadgeClassName(option.value))}
+                                    >
+                                        {riskLevelCounts[option.value] ?? 0}
+                                    </Badge>
+                                )}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                </Tabs>
             </div>
 
             <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_280px]">
@@ -121,7 +179,7 @@ export default function RegionRiskMap() {
                     ) : error ? (
                         <div className="flex h-full items-center justify-center p-6 text-sm text-rose-700">{error}</div>
                     ) : (
-                        <RegionRiskChoroplethMap features={features} />
+                        <RegionRiskChoroplethMap features={features} activeRiskLevel={selectedRiskLevel} />
                     )}
                 </div>
 

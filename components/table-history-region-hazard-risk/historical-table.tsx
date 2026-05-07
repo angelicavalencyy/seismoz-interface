@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { RiskMapTableRecord } from "@/lib/historical-data/table-api"
-import { formatCellValue, getRiskMapTableKabupatenName, getRiskMapTableRiskLevel } from "@/lib/historical-data/table-api"
+import { formatCellValue, getRiskMapTableCluster, getRiskMapTableKabupatenName, getRiskMapTableRiskLevel } from "@/lib/historical-data/table-api"
 import { Badge } from "@/components/ui/badge"
 
 type TableColumn = {
@@ -100,7 +100,9 @@ export function HistoricalDataTable({
                           const value =
                             column.key === "num"
                               ? (currentPage - 1) * rowsPerPage + index + 1
-                              : record[column.key as keyof RiskMapTableRecord]
+                              : column.key === "cluster"
+                                ? getRiskMapTableCluster(record)
+                                : record[column.key as keyof RiskMapTableRecord]
 
                           if (column.key === "risk_level") {
                             return (
@@ -181,20 +183,10 @@ export function HistoricalDataTable({
               <Button variant="outline" size="icon-sm" onClick={() => onPageChange(1)} disabled={currentPage === 1}>
                 <ChevronsLeft className="size-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
+              <Button variant="outline" size="icon-sm" onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
                 <ChevronLeft className="size-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
+              <Button variant="outline" size="icon-sm" onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
                 <ChevronRight className="size-4" />
               </Button>
               <Button variant="outline" size="icon-sm" onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages}>

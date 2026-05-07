@@ -24,6 +24,7 @@ export interface RiskMapTableRecord {
   Mag_Max?: number | string
   Mag_Mean?: number | string
   Depth_Mean?: number | string
+  Cluster?: number | string
   Risk_Score?: number | string
   Risk_Level?: string
 }
@@ -112,6 +113,20 @@ export function getRiskMapTableKabupatenName(record: RiskMapTableRecord): string
 
 export function getRiskMapTableRiskLevel(record: RiskMapTableRecord): string {
   return normalizeRiskLevelLabel(record.risk_level ?? record.Risk_Level)
+}
+
+export function getRiskMapTableCluster(record: RiskMapTableRecord): number | string | null {
+  const value = record.cluster ?? record.Cluster
+
+  if (value === undefined || value === null) {
+    return null
+  }
+
+  if (typeof value === "string" && value.trim().length === 0) {
+    return null
+  }
+
+  return value
 }
 
 export { formatCellValue }

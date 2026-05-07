@@ -18,7 +18,7 @@ function TagCard({
         <Card className="h-full rounded-lg border border-slate-100 bg-white">
             <CardHeader className="flex h-full flex-col items-start gap-2 p-4">
                 <div className="flex gap-3">
-                    <div className="flex shrink-0 items-center justify-center text-purple-600">
+                    <div className="flex shrink-0 items-center justify-center text-blue-600">
                         {icon}
                     </div>
                     <CardTitle className="w-full text-sm font-semibold text-slate-900">{title}</CardTitle>

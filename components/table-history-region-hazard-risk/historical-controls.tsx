@@ -3,23 +3,54 @@
 import { useMemo, type ReactNode } from "react"
 import { CalendarIcon, MapPinned, RefreshCcw, Table2 } from "lucide-react"
 import { format } from "date-fns"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Checkbox } from "@/components/ui/checkbox"
 
-type HistoricalDataControlsProps = {
-  selectedDate: string
-  onDateChange: (value: string) => void
-  onResetDate: () => void
-  showResetDate: boolean
-  viewMode: "table" | "map"
-  onViewModeChange: (mode: "table" | "map") => void
-  totalCount: number
-  filteredCount: number
-  selectedDateLabel: string
+type ViewMode = "table" | "map"
+
+function ViewOption({
+  checked,
+  onCheckedChange,
+  icon,
+  title,
+  description,
+}: {
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  icon: ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onCheckedChange(true)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          onCheckedChange(true)
+        }
+      }}
+      className={cn(
+        "flex min-h-[72px] min-w-[180px] cursor-pointer items-start justify-start gap-3 rounded-2xl px-4 py-3 text-left transition-colors",
+        checked ? "bg-muted/30 text-foreground" : "bg-transparent text-foreground hover:bg-muted/20"
+      )}
+    >
+      <Checkbox checked={checked} onCheckedChange={(value) => onCheckedChange(value === true)} className="mt-0.5" />
+      <div className="space-y-0.5">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          {icon}
+          <span>{title}</span>
+        </div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+    </div>
+  )
 }
 
 export function HistoricalDataControls({
@@ -32,7 +63,17 @@ export function HistoricalDataControls({
   totalCount,
   filteredCount,
   selectedDateLabel,
-}: HistoricalDataControlsProps) {
+}: {
+  selectedDate: string
+  onDateChange: (value: string) => void
+  onResetDate: () => void
+  showResetDate: boolean
+  viewMode: ViewMode
+  onViewModeChange: (mode: ViewMode) => void
+  totalCount: number
+  filteredCount: number
+  selectedDateLabel: string
+}) {
   const showTable = viewMode === "table"
   const showMap = viewMode === "map"
 
@@ -45,47 +86,6 @@ export function HistoricalDataControls({
 
     return Number.isNaN(parsedDate.getTime()) ? undefined : parsedDate
   }, [selectedDate])
-
-  function ViewOption({
-    checked,
-    onCheckedChange,
-    icon,
-    title,
-    description,
-  }: {
-    checked: boolean
-    onCheckedChange: (checked: boolean) => void
-    icon: ReactNode
-    title: string
-    description: string
-  }) {
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => onCheckedChange(true)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault()
-            onCheckedChange(true)
-          }
-        }}
-        className={cn(
-          "flex min-h-[72px] min-w-[180px] cursor-pointer items-start justify-start gap-3 rounded-2xl px-4 py-3 text-left transition-colors",
-          checked ? "bg-muted/30 text-foreground" : "bg-transparent text-foreground hover:bg-muted/20"
-        )}
-      >
-        <Checkbox checked={checked} onCheckedChange={(value) => onCheckedChange(value === true)} className="mt-0.5" />
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            {icon}
-            <span>{title}</span>
-          </div>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-    )
-  }
 
   const handleCalendarSelect = (dateValue: Date | undefined) => {
     if (!dateValue) {
@@ -127,12 +127,7 @@ export function HistoricalDataControls({
           </Popover>
 
           {showResetDate ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="border-border bg-background text-foreground hover:bg-muted"
-              onClick={onResetDate}
-            >
+            <Button type="button" variant="outline" className="border-border bg-background text-foreground hover:bg-muted" onClick={onResetDate}>
               <RefreshCcw className="size-4" />
               Reset
             </Button>
@@ -143,13 +138,13 @@ export function HistoricalDataControls({
       <div className="flex flex-col items-start gap-3">
         <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Badge variant="outline" className={cn("border border-purple-200 bg-purple-50 text-purple-700")}>
+          <Badge variant="outline" className={cn("border border-blue-200 bg-blue-50 text-blue-700")}>
             <span>Total Data: {totalCount}</span>
           </Badge>
-          <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
-            <span>Filtered: {filteredCount}</span>
+          <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+            <span>Selektif Data: {filteredCount}</span>
           </Badge>
-          <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+          <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
             <span>Tanggal: {selectedDateLabel}</span>
           </Badge>
         </div>
@@ -157,20 +152,21 @@ export function HistoricalDataControls({
 
       <div className="flex flex-col items-start gap-3">
         <label className="text-sm font-semibold tracking-wide text-foreground">Tampilan</label>
-        <div className="flex flex-row gap-3">
+
+        <div className="flex flex-row gap-12">
           <ViewOption
             checked={showTable}
             onCheckedChange={(checked) => checked && onViewModeChange("table")}
             title="Table View"
-            description="Tabel data risk map"
+            description="Tabel data risiko ancaman gempa bumi"
             icon={<Table2 className="size-4 text-primary" />}
           />
           <ViewOption
             checked={showMap}
             onCheckedChange={(checked) => checked && onViewModeChange("map")}
-            title="Map View"
-            description="Peta risk map"
             icon={<MapPinned className="size-4 text-primary" />}
+            title="Map View"
+            description="Peta risiko ancaman gempa bumi berdasarkan wilayah"
           />
         </div>
       </div>

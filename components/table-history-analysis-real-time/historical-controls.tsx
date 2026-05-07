@@ -138,13 +138,13 @@ export function HistoricalControls({
                 <div className="flex flex-col items-start gap-3">
                     <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>Total Data: {totalCount}</span>
                         </Badge>
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>Selektif Data: {filteredCount}</span>
                         </Badge>
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>Tanggal: {selectedDateLabel}</span>
                         </Badge>
                     </div>

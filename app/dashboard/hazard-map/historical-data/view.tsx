@@ -5,9 +5,9 @@ import { Search, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { HistoricalDataTable } from "@/components/table-history-region-hazard-risk/historical-table"
 import { cn } from "@/lib/utils"
-import { normalizeRiskMapGeojsonFeatures } from "@/lib/historical-data/geojson-api"
 import {
   getRiskMapTableKabupatenName,
   getRiskMapTableRiskLevel,
@@ -53,25 +53,21 @@ export default function HistoricalData() {
         setLoading(true)
         setError(null)
 
-        const geojsonResponse = await fetch("/api/risk-map/geojson", {
+        const response = await fetch("/api/risk-map/table", {
           signal: controller.signal,
-          cache: "no-store",
         })
 
-        if (!geojsonResponse.ok) {
-          throw new Error(`Failed to load historical geojson data (${geojsonResponse.status})`)
+        if (!response.ok) {
+          throw new Error(`Failed to load risk map table data (${response.status})`)
         }
 
-        const geojsonPayload = await geojsonResponse.json()
+        const payload = (await response.json()) as { records?: RiskMapTableRecord[] }
 
         if (!isActive) {
           return
         }
 
-        const normalizedFeatures = normalizeRiskMapGeojsonFeatures(geojsonPayload)
-        const normalizedRecords = normalizedFeatures.flatMap((feature) => (feature.properties ? [feature.properties] : []))
-
-        setRecords(normalizedRecords)
+        setRecords(payload.records ?? [])
         setPage(1)
       } catch (fetchError) {
         if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
@@ -82,7 +78,7 @@ export default function HistoricalData() {
           return
         }
 
-        setError("Gagal memuat data historical geojson dari API.")
+        setError("Gagal memuat data statistik risiko dari API.")
       } finally {
         if (isActive) {
           setLoading(false)
@@ -112,31 +108,63 @@ export default function HistoricalData() {
 
   const riskLevelOptions: Array<{ value: "all" | "Tinggi" | "Sedang" | "Rendah"; label: string }> = [
     { value: "all", label: "Semua" },
-    { value: "Tinggi", label: "Tinggi" },
-    { value: "Sedang", label: "Sedang" },
     { value: "Rendah", label: "Rendah" },
+    { value: "Sedang", label: "Sedang" },
+    { value: "Tinggi", label: "Tinggi" },
   ]
+
+  const riskLevelBadgeClassName = (level: "Rendah" | "Sedang" | "Tinggi") => {
+    switch (level) {
+      case "Rendah":
+        return "border border-green-200 bg-green-50 text-green-700 hover:bg-green-50"
+      case "Sedang":
+        return "border border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
+      case "Tinggi":
+        return "border border-red-200 bg-red-50 text-red-700 hover:bg-red-50"
+    }
+  }
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-visible font-sans text-foreground">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:flex-wrap xl:items-end xl:justify-between">
+        <div className="flex flex-col xl:flex-row xl:flex-wrap xl:items-end xl:justify-start xl:gap-0">
           <div className="flex flex-col items-start gap-3">
+            <div className="flex flex-col gap-2">
+              <h1 className="text-2xl font-bold text-foreground">Data Pemetaan Wilayah Risiko Ancaman Gempa</h1>
+              {/* <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p> */}
+            </div>
             <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="outline" className={cn("border border-purple-200 bg-purple-50 text-purple-700")}> 
+              <Badge variant="outline" className={cn("border border-blue-200 bg-blue-50 text-blue-700")}>
                 <span>Total Data: {records.length}</span>
               </Badge>
               {Object.entries(riskLevelCounts).map(([riskLevel, count]) => (
-                <Badge key={riskLevel} variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                <Badge key={riskLevel} variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                   <span>
                     {riskLevel}: {count}
                   </span>
                 </Badge>
               ))}
-              <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
-                <span>Hasil Filter: {filteredRecords.length}</span>
-              </Badge>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-semibold tracking-wide text-foreground">Filter Risk Level</label>
+              <Tabs defaultValue="all" value={selectedRiskLevel} onValueChange={(value) => setSelectedRiskLevel(value as "all" | "Tinggi" | "Sedang" | "Rendah")}>
+                <TabsList className="w-fit">
+                  {riskLevelOptions.map((option) => (
+                    <TabsTrigger key={option.value} value={option.value}>
+                      {option.label}
+                      {option.value !== "all" && riskLevelCounts[option.value] !== undefined && (
+                        <Badge
+                          variant="outline"
+                          className={cn("ml-2 h-5 rounded-full px-2 text-[10px]", riskLevelBadgeClassName(option.value))}
+                        >
+                          {riskLevelCounts[option.value] ?? 0}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
           </div>
 
@@ -148,7 +176,7 @@ export default function HistoricalData() {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Cari kabupaten atau kota"
-                className="h-11 rounded-full border-border bg-background pl-10 pr-12 text-sm"
+                className="h-10 rounded-md border-border bg-background pl-10 pr-12 text-sm"
               />
               {searchQuery ? (
                 <Button
@@ -165,31 +193,6 @@ export default function HistoricalData() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold tracking-wide text-foreground">Filter Risk Level</label>
-            <div className="flex flex-wrap gap-2">
-              {riskLevelOptions.map((option) => {
-                const isActive = selectedRiskLevel === option.value
-
-                return (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedRiskLevel(option.value)}
-                    className={cn(
-                      "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                      isActive
-                        ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
-                        : "border-border bg-background text-foreground hover:bg-muted"
-                    )}
-                  >
-                    {option.label}
-                  </Button>
-                )
-              })}
-            </div>
-          </div>
         </div>
 
         {hasActiveFilters ? (

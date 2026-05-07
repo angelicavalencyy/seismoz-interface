@@ -6,12 +6,14 @@ import MapWrapper from "@/components/map-wrapper"
 import { EarthquakeCardList } from "@/components/card-detail-earthquake"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
     createEarthquakeMapPoints,
     getEarthquakeRecordId,
     getEarthquakeRiskLevel,
     type EarthquakeRecord,
 } from "@/lib/earthquake"
+import { cn } from "@/lib/utils"
 
 export default function LiveMonitoring() {
     const [earthquakes, setEarthquakes] = useState<EarthquakeRecord[]>([])
@@ -27,6 +29,17 @@ export default function LiveMonitoring() {
         { value: "Sedang", label: "Sedang" },
         { value: "Tinggi", label: "Tinggi" },
     ]
+
+    const riskLevelBadgeClassName = (level: "Rendah" | "Sedang" | "Tinggi") => {
+        switch (level) {
+            case "Rendah":
+                return "border border-green-200 bg-green-50 text-green-700 hover:bg-green-50"
+            case "Sedang":
+                return "border border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
+            case "Tinggi":
+                return "border border-red-200 bg-red-50 text-red-700 hover:bg-red-50"
+        }
+    }
 
     useEffect(() => {
         const controller = new AbortController()
@@ -82,6 +95,14 @@ export default function LiveMonitoring() {
     }, [])
 
     const selectedId = selectedEarthquake ? getEarthquakeRecordId(selectedEarthquake) : null
+    const riskLevelCounts = useMemo(() => {
+        return earthquakes.reduce<Record<string, number>>((accumulator, record) => {
+            const riskLevel = getEarthquakeRiskLevel(record)
+            accumulator[riskLevel] = (accumulator[riskLevel] ?? 0) + 1
+            return accumulator
+        }, {})
+    }, [earthquakes])
+
     const filteredEarthquakes = useMemo(() => {
         if (riskLevelFilter === "all") {
             return earthquakes
@@ -118,38 +139,42 @@ export default function LiveMonitoring() {
 
     return (
         <div className="flex h-auto w-full flex-1 flex-col font-sans dark:border-gray-800 dark:bg-black">
-            {/* <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Real Time Map Analysis</h1> */}
-
+            <div className="flex flex-col gap-4 pb-2">
+              <h1 className="text-2xl font-bold text-foreground">Pantauan Gempa Terkini</h1>
+              {/* <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p> */}
+            </div>
+            <div className="flex flex-col items-start gap-3 text-sm text-muted-foreground">
+                <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>Total Gempa: {earthquakes.length}</span>
+                    </Badge>
+                    <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>Hasil Filter: {filteredCount}</span>
+                    </Badge>
+                </div>
+            </div>
             <div className="mt-3 flex flex-col gap-3">
-                <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+                <div className="flex flex-col gap-2 lg:flex-col lg:items-start lg:justify-start">
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-semibold tracking-wide text-foreground">Filter Gempa Berdasarkan Risiko</label>
-                        <div className="flex flex-wrap gap-2">
-                            {riskLevelOptions.map((option) => {
-                                const isActive = riskLevelFilter === option.value
-
-                                return (
-                                    <Button
-                                        key={option.value}
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setRiskLevelFilter(option.value)}
-                                        className={isActive ? "rounded-full border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "rounded-full border-border bg-background text-foreground hover:bg-muted"}
-                                    >
+                        <Tabs defaultValue="all" value={riskLevelFilter} onValueChange={(value) => setRiskLevelFilter(value as "all" | "Rendah" | "Sedang" | "Tinggi")}>
+                            <TabsList className="w-fit">
+                                {riskLevelOptions.map((option) => (
+                                    <TabsTrigger key={option.value} value={option.value}>
                                         {option.label}
-                                    </Button>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
-                            <span>Total Gempa: {earthquakes.length}</span>
-                        </Badge>
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
-                            <span>Hasil Filter: {filteredCount}</span>
-                        </Badge>
+                                        {option.value !== "all" && riskLevelCounts[option.value] !== undefined && (
+                                            <Badge
+                                                variant="outline"
+                                                className={cn("ml-2 h-5 rounded-full px-2 text-[10px]", riskLevelBadgeClassName(option.value))}
+                                            >
+                                                {riskLevelCounts[option.value] ?? 0}
+                                            </Badge>
+                                        )}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
                     </div>
                 </div>
 

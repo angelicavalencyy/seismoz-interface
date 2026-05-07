@@ -1,18 +1,16 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { HistoricalDataControls } from "./components/historical-controls"
-import { HistoricalDataMapPanel } from "./components/historical-map-panel"
-import { HistoricalDataTable } from "./components/historical-table"
+import { HistoricalDataControls } from "@/components/table-history-region-hazard-risk/historical-controls"
+import { HistoricalDataMapPanel } from "@/components/table-history-region-hazard-risk/historical-map-panel"
+import { HistoricalDataTable } from "@/components/table-history-region-hazard-risk/historical-table"
 import {
   createRiskMapGeoPoints,
   getRiskMapGeojsonFeatureDateKey,
   normalizeRiskMapGeojsonFeatures,
   type RiskMapGeoPoint,
 } from "@/lib/historical-data/geojson-api"
-import {
-  getTodayDateKey,
-} from "@/lib/historical-data/utils"
+import { getTodayDateKey } from "@/lib/historical-data/utils"
 import {
   getRiskMapTableRecordDateKey,
   normalizeRiskMapTableRecords,

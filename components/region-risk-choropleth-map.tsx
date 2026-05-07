@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { geoJSON as createGeoJsonLayer } from "leaflet"
 import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet"
 import type { FeatureCollection, Geometry, Feature } from "geojson"
@@ -10,10 +10,17 @@ import {
   getRiskMapGeojsonFeatureRiskLevel,
   getRiskMapGeojsonFeatureRiskScore,
 } from "@/lib/historical-data/geojson-api"
+import {
+  formatCellValue,
+  getRiskMapTableCluster,
+  getRiskMapTableRiskLevel,
+  type RiskMapTableRecord,
+} from "@/lib/historical-data/table-api"
 import "leaflet/dist/leaflet.css"
 
 type RegionRiskChoroplethMapProps = {
   features: RiskMapGeojsonFeature[]
+  activeRiskLevel?: "all" | "Rendah" | "Sedang" | "Tinggi"
 }
 
 function getFillColor(feature: RiskMapGeojsonFeature): string {
@@ -47,7 +54,111 @@ function getFillColor(feature: RiskMapGeojsonFeature): string {
   return "#22c55e"
 }
 
-function RegionRiskLayer({ features }: { features: RiskMapGeojsonFeature[] }) {
+function buildRegionRiskTooltipHtml(feature: RiskMapGeojsonFeature): string {
+  const title = getRiskMapGeojsonFeatureName(feature)
+  const riskLevel = getRiskMapTableRiskLevel((feature.properties ?? {}) as RiskMapTableRecord)
+  const record = (feature.properties ?? {}) as RiskMapTableRecord
+
+  const severity = riskLevel === "Tinggi" ? "red" : riskLevel === "Sedang" ? "yellow" : "green"
+  const badgeClassName =
+    severity === "red"
+      ? "border border-red-200 bg-red-50 text-red-700"
+      : severity === "yellow"
+        ? "border border-yellow-200 bg-yellow-50 text-yellow-700"
+        : "border border-green-200 bg-green-50 text-green-700"
+
+  const luasWilayah = record.luas_wilayah_km2 ?? record.Luas_Wilayah_Km2
+  const frekuensi = record.frekuensi_gempa ?? record.Frekuensi_Gempa
+  const magMean = record.mag_mean ?? record.Mag_Mean
+  const magMax = record.mag_max ?? record.Mag_Max
+  const depthMean = record.depth_mean ?? record.Depth_Mean
+  const cluster = getRiskMapTableCluster(record)
+
+  return `
+    <div class="w-[260px] max-w-[260px] space-y-2 rounded-xl border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg shadow-black/5">
+      <div class="flex items-start justify-between gap-2">
+        <p class="text-[10px] font-medium uppercase tracking-wide text-primary">Region Risk</p>
+        <span class="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${badgeClassName}">
+          Risiko Ancaman ${riskLevel}
+        </span>
+      </div>
+
+      <h4 class="max-w-[220px] whitespace-normal break-words text-sm font-semibold leading-snug text-popover-foreground">${title}</h4>
+
+      <div class="rounded-lg border border-border bg-muted/40 p-2.5 text-[11px]">
+        <div class="flex items-start justify-between gap-3">
+          <span class="text-muted-foreground">Luas wilayah</span>
+          <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(luasWilayah)} km²</span>
+        </div>
+        <div class="mt-1 flex items-start justify-between gap-3">
+          <span class="text-muted-foreground">Frekuensi gempa</span>
+          <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(frekuensi)}</span>
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-dashed border-border/80 bg-background/70 p-2.5 text-[11px]">
+        <div class="flex items-start justify-between gap-3">
+          <span class="text-muted-foreground">Mag rata-rata</span>
+          <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(magMean)}</span>
+        </div>
+        <div class="mt-1 flex items-start justify-between gap-3">
+          <span class="text-muted-foreground">Mag maksimal</span>
+          <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(magMax)}</span>
+        </div>
+        <div class="mt-1 flex items-start justify-between gap-3">
+          <span class="text-muted-foreground">Kedalaman rata-rata</span>
+          <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(depthMean)}</span>
+        </div>
+        <div class="mt-1 flex items-start justify-between gap-3">
+          <span class="text-muted-foreground">Cluster</span>
+          <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(cluster)}</span>
+        </div>
+      </div>
+    </div>
+  `.trim()
+}
+
+function RegionRiskAutoLocate({ enabled }: { enabled: boolean }) {
+  const map = useMap()
+  const hasLocated = useRef(false)
+
+  useEffect(() => {
+    if (!enabled || hasLocated.current) {
+      return
+    }
+
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return
+    }
+
+    hasLocated.current = true
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        map.flyTo([latitude, longitude], Math.max(map.getZoom(), 8), {
+          duration: 0.8,
+        })
+      },
+      () => undefined,
+      {
+        enableHighAccuracy: false,
+        timeout: 2500,
+        maximumAge: 60_000,
+      }
+    )
+  }, [enabled, map])
+
+  return null
+}
+
+function RegionRiskLayer({
+  features,
+  activeRiskLevel,
+}: {
+  features: RiskMapGeojsonFeature[]
+  activeRiskLevel: "all" | "Rendah" | "Sedang" | "Tinggi"
+}) {
   const map = useMap()
 
   const collection = useMemo<FeatureCollection<Geometry, RiskMapGeojsonFeature>>(
@@ -80,34 +191,42 @@ function RegionRiskLayer({ features }: { features: RiskMapGeojsonFeature[] }) {
   return (
     <GeoJSON
       data={collection as never}
-      style={(feature) => ({
-        fillColor: feature ? getFillColor(feature as unknown as RiskMapGeojsonFeature) : "#60a5fa",
-        weight: 1.2,
-        opacity: 1,
-        color: "#ffffff",
-        dashArray: "2",
-        fillOpacity: 0.72,
-      })}
+      style={(feature) => {
+        const riskFeature = feature as unknown as RiskMapGeojsonFeature
+        const featureRiskLevel = getRiskMapGeojsonFeatureRiskLevel(riskFeature)
+        const isActive = activeRiskLevel === "all" || featureRiskLevel === activeRiskLevel
+
+        return {
+          fillColor: feature ? getFillColor(riskFeature) : "#60a5fa",
+          weight: isActive ? 1.6 : 1.0,
+          opacity: isActive ? 1 : 0.35,
+          color: "#ffffff",
+          dashArray: "2",
+          fillOpacity: isActive ? 0.78 : 0.12,
+        }
+      }}
       onEachFeature={(feature, layer) => {
         const riskFeature = feature as unknown as RiskMapGeojsonFeature
-        const title = getRiskMapGeojsonFeatureName(riskFeature)
-        const riskLevel = getRiskMapGeojsonFeatureRiskLevel(riskFeature)
-        const riskScore = getRiskMapGeojsonFeatureRiskScore(riskFeature)
+
+        layer.on("click", () => {
+          // Zoom directly to selected polygon bounds
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const maybeBounds = (layer as any).getBounds?.()
+
+          if (maybeBounds?.isValid?.()) {
+            map.fitBounds(maybeBounds.pad(0.08), {
+              animate: true,
+            })
+          }
+        })
 
         layer.bindTooltip(
-          `
-            <div style="min-width: 180px;">
-              <div style="font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #2563eb; margin-bottom: 4px;">Region Risk</div>
-              <div style="font-size: 14px; font-weight: 700; margin-bottom: 4px; color: #0f172a;">${title}</div>
-              <div style="font-size: 12px; color: #334155;">Risk Level: ${riskLevel}</div>
-              <div style="font-size: 12px; color: #334155;">Risk Score: ${riskScore ?? "-"}</div>
-            </div>
-          `,
+          buildRegionRiskTooltipHtml(riskFeature),
           {
             sticky: true,
             direction: "top",
             opacity: 1,
-            className: "region-risk-tooltip",
+            className: "earthquake-tooltip !border-0 !bg-transparent !p-0 !shadow-none",
           }
         )
       }}
@@ -115,7 +234,10 @@ function RegionRiskLayer({ features }: { features: RiskMapGeojsonFeature[] }) {
   )
 }
 
-export default function RegionRiskChoroplethMap({ features }: RegionRiskChoroplethMapProps) {
+export default function RegionRiskChoroplethMap({
+  features,
+  activeRiskLevel = "all",
+}: RegionRiskChoroplethMapProps) {
   return (
     <MapContainer center={[-2.5, 118]} zoom={5.2} minZoom={4.2} maxZoom={9} zoomControl className="h-full w-full">
       <TileLayer
@@ -124,7 +246,8 @@ export default function RegionRiskChoroplethMap({ features }: RegionRiskChorople
         maxZoom={22}
       />
 
-      <RegionRiskLayer features={features} />
+      <RegionRiskAutoLocate enabled={true} />
+      <RegionRiskLayer features={features} activeRiskLevel={activeRiskLevel} />
     </MapContainer>
   )
 }
