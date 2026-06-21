@@ -1,8 +1,10 @@
 import { clusteredData } from "@/lib/data-gempa-statis"
+import { normalizeRiskLevelLabel } from "@/lib/historical-data/utils"
 
 export interface EarthquakeRecord {
   id?: string
   created_at?: string
+  updated_at?: string
   tanggal?: string
   jam?: string
   koordinat?: string
@@ -13,6 +15,10 @@ export interface EarthquakeRecord {
   wilayah?: string
   cluster?: number
   risk_level?: string
+  risk_score?: number | string
+  gadm_id?: string
+  gadm_name?: string
+  frekuensi_gempa?: number | string
   Tanggal?: string
   Jam?: string
   DateTime?: string
@@ -115,6 +121,47 @@ export function mergeEarthquakeRecords(records: EarthquakeRecord[][]): Earthquak
 
 export function getEarthquakeLocation(record: EarthquakeRecord): string {
   return record.koordinat ?? record.Koordinat ?? record.Coordinates ?? "Tidak tersedia"
+}
+
+export function getEarthquakeWilayah(record: EarthquakeRecord): string {
+  return record.Wilayah ?? record.wilayah ?? "Tidak tersedia"
+}
+
+export function getEarthquakeTanggal(record: EarthquakeRecord): string {
+  return record.Tanggal ?? record.tanggal ?? record.DateTime ?? record.created_at ?? "Tidak tersedia"
+}
+
+export function getEarthquakeJam(record: EarthquakeRecord): string {
+  return record.Jam ?? record.jam ?? "-"
+}
+
+export function getEarthquakeMagnitude(record: EarthquakeRecord): string {
+  const value = record.Magnitude ?? record.magnitude
+
+  if (value === undefined || value === null || value === "") {
+    return "-"
+  }
+
+  return typeof value === "number" ? value.toFixed(1) : String(value)
+}
+
+export function getEarthquakeDepth(record: EarthquakeRecord): string {
+  const value = record.depth ?? record.Kedalaman
+
+  if (value === undefined || value === null || value === "") {
+    return "-"
+  }
+
+  if (typeof value === "number") {
+    return `${value} km`
+  }
+
+  const text = String(value).trim()
+  return /\bkm\b/i.test(text) ? text : `${text} km`
+}
+
+export function getEarthquakeRiskLevel(record: EarthquakeRecord): string {
+  return normalizeRiskLevelLabel(record.risk_level)
 }
 
 export function getEarthquakeRecordId(record: EarthquakeRecord, index?: number): string {

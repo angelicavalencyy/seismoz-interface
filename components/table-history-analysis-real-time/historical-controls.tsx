@@ -1,16 +1,27 @@
 "use client"
 
 import { useMemo, type ReactNode } from "react"
-import { CalendarIcon, MapPinned, RefreshCcw, Table2 } from "lucide-react"
+import { CalendarIcon, MapPinned, RefreshCcw, Table2, Filter } from "lucide-react"
 import { format } from "date-fns"
 import { Badge } from "../ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "../ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 type ViewMode = "table" | "map"
+
+export type RiskLevelFilter = "all" | "Rendah" | "Sedang" | "Tinggi" | "Ekstrem"
+
+const RISK_LEVEL_OPTIONS: { value: RiskLevelFilter; label: string; color: string }[] = [
+    { value: "all", label: "Semua Level", color: "text-muted-foreground" },
+    { value: "Rendah", label: "Rendah", color: "text-emerald-600" },
+    { value: "Sedang", label: "Sedang", color: "text-amber-600" },
+    { value: "Tinggi", label: "Tinggi", color: "text-rose-600" },
+    { value: "Ekstrem", label: "Ekstrem", color: "text-red-950" },
+]
 
 function ViewOption({
     checked,
@@ -63,6 +74,8 @@ export function HistoricalControls({
     totalCount,
     filteredCount,
     selectedDateLabel,
+    riskLevelFilter,
+    onRiskLevelFilterChange,
 }: {
     selectedDate: string
     onDateChange: (value: string) => void
@@ -73,6 +86,8 @@ export function HistoricalControls({
     totalCount: number
     filteredCount: number
     selectedDateLabel: string
+    riskLevelFilter: RiskLevelFilter
+    onRiskLevelFilterChange: (value: RiskLevelFilter) => void
 }) {
     const showTable = viewMode === "table"
     const showMap = viewMode === "map"
@@ -100,9 +115,11 @@ export function HistoricalControls({
         onDateChange(`${year}-${month}-${day}`)
     }
 
+    const activeRiskLabel = RISK_LEVEL_OPTIONS.find((opt) => opt.value === riskLevelFilter)?.label ?? "Semua Level"
+
     return (
         <div className="flex flex-col gap-5 p-0 lg:items-start lg:justify-start">
-            <div className="flex flex-row items-center justify-start gap-12">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-start gap-6 lg:gap-12">
                 <div className="flex flex-col items-start gap-2">
                     <label className="text-sm font-semibold tracking-wide text-foreground">Filter Tanggal</label>
                     <div className="flex items-center gap-2">
@@ -135,18 +152,44 @@ export function HistoricalControls({
                         ) : null}
                     </div>
                 </div>
+
+                {/* Risk Level Filter */}
+                <div className="flex flex-col items-start gap-2">
+                    <label className="text-sm font-semibold tracking-wide text-foreground">Filter Level Risiko</label>
+                    <Select value={riskLevelFilter} onValueChange={(val) => onRiskLevelFilterChange(val as RiskLevelFilter)}>
+                        <SelectTrigger className="w-[200px]">
+                            <div className="flex items-center gap-2">
+                                <Filter className="size-4 text-muted-foreground" />
+                                <SelectValue placeholder="Pilih level risiko">{activeRiskLabel}</SelectValue>
+                            </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                            {RISK_LEVEL_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                    <span className={cn("font-medium", option.color)}>{option.label}</span>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
                 <div className="flex flex-col items-start gap-3">
                     <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>Total Data: {totalCount}</span>
                         </Badge>
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>Selektif Data: {filteredCount}</span>
                         </Badge>
-                        <Badge variant="outline" className="border border-purple-200 bg-purple-50 text-purple-700">
+                        <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>Tanggal: {selectedDateLabel}</span>
                         </Badge>
+                        {riskLevelFilter !== "all" && (
+                            <Badge variant="outline" className="border border-red-900/40 bg-red-950 text-red-50">
+                                <span>Level: {riskLevelFilter}</span>
+                            </Badge>
+                        )}
                     </div>
                 </div>
             </div>
@@ -154,7 +197,7 @@ export function HistoricalControls({
             <div className="flex flex-col items-start justify-between gap-4">
                 <label className="text-sm font-semibold tracking-wide text-foreground">Tampilan</label>
 
-                <div className="flex flex-row gap-12">
+                <div className="flex flex-col sm:flex-row gap-4 lg:gap-12 w-full">
                     <ViewOption
                         checked={showTable}
                         onCheckedChange={(checked) => checked && onViewModeChange("table")}

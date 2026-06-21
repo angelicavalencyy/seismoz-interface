@@ -103,7 +103,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           asChild
                           isActive={activePath === subItem.url}
                         >
-                          <Link href={subItem.url}>
+                          <Link href={subItem.url} prefetch={false}>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>

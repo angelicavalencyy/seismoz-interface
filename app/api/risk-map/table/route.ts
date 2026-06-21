@@ -1,10 +1,9 @@
-import { getStaticEarthquakeRecords, normalizeEarthquakeRecords } from "@/lib/earthquake"
-import { normalizeRiskMapPagination } from "@/lib/historical-data/table-api"
+import { normalizeRiskMapPagination, normalizeRiskMapTableRecords } from "@/lib/historical-data/table-api"
 import type { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-const HISTORY_URL = "https://earthquakes-model-api.onrender.com/api/realtime/history"
+const TABLE_URL = "https://earthquakes-model-api.onrender.com/api/risk-map/table"
 
 function getPositiveInteger(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10)
@@ -17,13 +16,13 @@ function buildBackendUrl(request: NextRequest) {
   const page = getPositiveInteger(requestParams.get("page"), 1)
   const limit = getPositiveInteger(requestParams.get("limit"), 20)
   const offset = (page - 1) * limit
-  const url = new URL(HISTORY_URL)
+  const url = new URL(TABLE_URL)
 
-  url.searchParams.set("offset", String(offset))
+  url.searchParams.set("page", String(page))
   url.searchParams.set("limit", String(limit))
-  url.searchParams.set("recompute", requestParams.get("recompute") ?? "false")
+  url.searchParams.set("offset", String(offset))
 
-  for (const key of ["date", "tanggal", "risk_level", "wilayah", "region", "search"]) {
+  for (const key of ["search", "wilayah", "region", "risk_level", "date", "tanggal"]) {
     const value = requestParams.get(key)
 
     if (value) {
@@ -34,7 +33,7 @@ function buildBackendUrl(request: NextRequest) {
   return { url, page, limit }
 }
 
-async function fetchHistorySource(request: NextRequest) {
+async function fetchRiskMapTableSource(request: NextRequest) {
   const { url, page, limit } = buildBackendUrl(request)
   const response = await fetch(url, {
     cache: "no-store",
@@ -49,37 +48,29 @@ async function fetchHistorySource(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { payload, page, limit } = await fetchHistorySource(request)
-    const earthquakes = normalizeEarthquakeRecords(payload)
+    const { payload, page, limit } = await fetchRiskMapTableSource(request)
+    const records = normalizeRiskMapTableRecords(payload)
     const pagination = normalizeRiskMapPagination(payload, {
       page,
       limit,
-      recordCount: earthquakes.length,
+      recordCount: records.length,
     })
-
-    if (earthquakes.length === 0) {
-      return Response.json({
-        source: "fallback",
-        earthquakes: getStaticEarthquakeRecords(),
-        pagination,
-      })
-    }
 
     return Response.json({
       source: "backend",
-      earthquakes,
+      records,
       pagination,
     })
   } catch {
     return Response.json({
       source: "fallback",
-      earthquakes: getStaticEarthquakeRecords(),
+      records: [],
       pagination: {
         page: 1,
         limit: 20,
         offset: 0,
-        total: null,
-        totalPages: null,
+        total: 0,
+        totalPages: 1,
         hasNextPage: false,
         hasPreviousPage: false,
       },

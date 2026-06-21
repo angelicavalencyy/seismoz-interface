@@ -6,9 +6,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { getEarthquakeRiskLevel, type EarthquakeRecord } from "@/lib/earthquake"
-import { formatCellValue } from "@/lib/historical-monitoring/utils"
-import { TableBadge } from "./table-badge"
+import type { RiskMapTableRecord } from "@/lib/historical-data/table-api"
+import { formatCellValue, getRiskMapTableCluster, getRiskMapTableKabupatenName, getRiskMapTableRiskLevel } from "@/lib/historical-data/table-api"
+import { Badge } from "@/components/ui/badge"
 import type { RiskMapPagination } from "@/lib/historical-data/table-api"
 
 type TableColumn = {
@@ -21,22 +21,18 @@ type TableColumn = {
 
 const tableColumns: TableColumn[] = [
   { key: "num", label: "No.", widthClass: "w-16", align: "right", sortable: false },
-  { key: "tanggal", label: "Tanggal", widthClass: "w-28", sortable: true },
-  { key: "jam", label: "Jam", widthClass: "w-24", sortable: true },
-  { key: "gadm_name", label: "Nama GADM", widthClass: "w-40", sortable: true },
+  { key: "nama_kabupaten", label: "Kabupaten", widthClass: "w-64", sortable: true },
+  { key: "luas_wilayah_km2", label: "Luas Wilayah (km²)", widthClass: "w-48", align: "right", sortable: true },
   { key: "frekuensi_gempa", label: "Frekuensi Gempa", widthClass: "w-48", align: "right", sortable: true },
-  { key: "wilayah", label: "Wilayah", widthClass: "w-[400px]", sortable: true },
-  { key: "koordinat", label: "Koordinat", widthClass: "w-36", sortable: false },
-  { key: "latitude", label: "Latitude", widthClass: "w-28", align: "right", sortable: true },
-  { key: "longitude", label: "Longitude", widthClass: "w-28", align: "right", sortable: true },
-  { key: "magnitude", label: "Magnitudo", widthClass: "w-32", align: "right", sortable: true },
-  { key: "depth", label: "Kedalaman", widthClass: "w-32", align: "right", sortable: true },
-  { key: "risk_level", label: "Status Risiko", widthClass: "w-36", sortable: true },
-  { key: "risk_score", label: "Skor Risiko", widthClass: "w-32", align: "right", sortable: true },
-  { key: "cluster", label: "Klaster", widthClass: "w-24", align: "right", sortable: true },
+  { key: "mag_max", label: "Mag Maks", widthClass: "w-36", align: "right", sortable: true },
+  { key: "mag_mean", label: "Rata-rata Mag", widthClass: "w-40", align: "right", sortable: true },
+  { key: "depth_mean", label: "Rata-rata Kedalaman", widthClass: "w-48", align: "right", sortable: true },
+  { key: "cluster", label: "Klaster", widthClass: "w-28", align: "right", sortable: true },
+  { key: "risk_score", label: "Skor Risiko", widthClass: "w-36", align: "right", sortable: true },
+  { key: "risk_level", label: "Status Risiko", widthClass: "w-40", sortable: true },
 ]
 
-export function HistoricalTable({
+export function HistoricalDataTable({
   records,
   rowsPerPage,
   onRowsPerPageChange,
@@ -44,14 +40,16 @@ export function HistoricalTable({
   onPageChange,
   pagination,
   serverPaginated = false,
+  emptyStateMessage = "Tidak ada data yang tersedia.",
 }: {
-  records: EarthquakeRecord[]
+  records: RiskMapTableRecord[]
   rowsPerPage: number
   onRowsPerPageChange: (value: number) => void
   page: number
   onPageChange: (value: number) => void
   pagination?: RiskMapPagination
   serverPaginated?: boolean
+  emptyStateMessage?: string
 }) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
 
@@ -67,8 +65,19 @@ export function HistoricalTable({
     let sortableRecords = [...records]
     if (sortConfig !== null) {
       sortableRecords.sort((a, b) => {
-        const aValue = a[sortConfig.key as keyof EarthquakeRecord]
-        const bValue = b[sortConfig.key as keyof EarthquakeRecord]
+        let aValue = a[sortConfig.key as keyof RiskMapTableRecord]
+        let bValue = b[sortConfig.key as keyof RiskMapTableRecord]
+
+        if (sortConfig.key === "nama_kabupaten") {
+          aValue = getRiskMapTableKabupatenName(a)
+          bValue = getRiskMapTableKabupatenName(b)
+        } else if (sortConfig.key === "cluster") {
+          aValue = getRiskMapTableCluster(a) ?? ""
+          bValue = getRiskMapTableCluster(b) ?? ""
+        } else if (sortConfig.key === "risk_level") {
+          aValue = getRiskMapTableRiskLevel(a)
+          bValue = getRiskMapTableRiskLevel(b)
+        }
         
         if (aValue === undefined || aValue === null) return 1
         if (bValue === undefined || bValue === null) return -1
@@ -108,11 +117,11 @@ export function HistoricalTable({
   const disableNextPage = serverPaginated ? !pagination?.hasNextPage : currentPage === totalPages
 
   return (
-    <div className="flex w-full min-w-0 flex-col overflow-hidden border border-gray-200 rounded-lg bg-card shadow-sm">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-0">
+    <Card className="flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-hidden border-border bg-card shadow-sm">
+      <CardContent className="flex min-h-0 min-w-0 flex-1 flex-col p-0">
         <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto">
           <div className="h-full w-full max-w-full min-w-0">
-            <table className="min-w-[1500px] w-full table-fixed border-separate border-spacing-0">
+            <table className="min-w-[1400px] w-full table-fixed border-separate border-spacing-0">
               <colgroup>
                 {tableColumns.map((column) => (
                   <col key={column.key} className={column.widthClass} />
@@ -124,9 +133,8 @@ export function HistoricalTable({
                     <th
                       key={column.key}
                       className={cn(
-                        "border-b border-border px-4 py-3 text-left text-xs font-semibold tracking-wide text-muted-foreground",
-                        column.align === "right" && "text-right",
-                        column.key === "wilayah" && "w-[420px] min-w-[420px]"
+                        "border-b border-border px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground",
+                        column.align === "right" && "text-right"
                       )}
                     >
                       {column.sortable ? (
@@ -159,14 +167,17 @@ export function HistoricalTable({
               <tbody className="divide-y divide-border">
                 {pagedRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={Math.max(tableColumns.length, 1)} className="border-b border-border px-4 py-10 text-center text-sm text-muted-foreground">
-                      Tidak ada data untuk tanggal yang dipilih.
+                    <td
+                      colSpan={Math.max(tableColumns.length, 1)}
+                      className="border-b border-border px-4 py-10 text-center text-sm text-muted-foreground"
+                    >
+                      {emptyStateMessage}
                     </td>
                   </tr>
                 ) : (
                   pagedRecords.map((record, index) => {
-                    const rowKey = record.id ?? `${currentPage}-${index}-${record.tanggal ?? ""}-${record.jam ?? ""}-${record.wilayah ?? ""}-${record.magnitude ?? ""}`
-                    const riskLevel = getEarthquakeRiskLevel(record)
+                    const rowKey = record.id_kabupaten ?? `${currentPage}-${index}-${getRiskMapTableKabupatenName(record)}`
+                    const riskLevel = getRiskMapTableRiskLevel(record)
                     const severity = riskLevel === "Ekstrem" ? "darkRed" : riskLevel === "Tinggi" ? "red" : riskLevel === "Sedang" ? "yellow" : "green"
 
                     return (
@@ -175,41 +186,56 @@ export function HistoricalTable({
                           const value =
                             column.key === "num"
                               ? (currentPage - 1) * rowsPerPage + index + 1
-                              : record[column.key as keyof EarthquakeRecord]
+                              : column.key === "cluster"
+                                ? getRiskMapTableCluster(record)
+                                : column.key === "nama_kabupaten"
+                                  ? getRiskMapTableKabupatenName(record)
+                                  : record[column.key as keyof RiskMapTableRecord]
 
                           if (column.key === "risk_level") {
                             return (
                               <td key={column.key} className="border-b border-border px-4 py-4 align-top text-sm text-foreground">
-                                <TableBadge tone={severity}>{formatCellValue(riskLevel)}</TableBadge>
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "border px-3 py-1 text-xs font-medium",
+                                    severity === "darkRed" && "border-red-600 bg-red-600 text-white",
+                                    severity === "red" && "border-red-200 bg-red-50 text-red-700",
+                                    severity === "yellow" && "border-yellow-200 bg-yellow-50 text-yellow-700",
+                                    severity === "green" && "border-green-200 bg-green-50 text-green-700"
+                                  )}
+                                >
+                                  {formatCellValue(value)}
+                                </Badge>
                               </td>
                             )
                           }
 
                           if (
-                            column.key === "num" || 
-                            column.key === "latitude" || 
-                            column.key === "longitude" || 
-                            column.key === "magnitude" || 
-                            column.key === "depth" || 
-                            column.key === "cluster" ||
+                            column.key === "num" ||
+                            column.key === "luas_wilayah_km2" ||
                             column.key === "frekuensi_gempa" ||
+                            column.key === "mag_max" ||
+                            column.key === "mag_mean" ||
+                            column.key === "depth_mean" ||
+                            column.key === "cluster" ||
                             column.key === "risk_score"
                           ) {
                             return (
-                              <td key={column.key} className={cn("border-b border-border px-4 py-4 align-top text-sm text-foreground", column.align === "right" && "text-right")}>
+                              <td
+                                key={column.key}
+                                className={cn(
+                                  "border-b border-border px-4 py-4 align-top text-sm text-foreground",
+                                  column.align === "right" && "text-right"
+                                )}
+                              >
                                 <span className="font-medium text-foreground">{formatCellValue(value)}</span>
                               </td>
                             )
                           }
 
                           return (
-                            <td
-                              key={column.key}
-                              className={cn(
-                                "border-b border-border px-4 py-4 align-top text-sm text-foreground",
-                                column.key === "wilayah" && "w-[420px] min-w-[420px]"
-                              )}
-                            >
+                            <td key={column.key} className="border-b border-border px-4 py-4 align-top text-sm text-foreground">
                               <div className="whitespace-normal break-words leading-relaxed text-muted-foreground">
                                 {formatCellValue(value)}
                               </div>
@@ -253,13 +279,13 @@ export function HistoricalTable({
               <Button variant="outline" size="icon-sm" onClick={() => onPageChange(currentPage + 1)} disabled={disableNextPage}>
                 <ChevronRight className="size-4" />
               </Button>
-              <Button variant="outline" size="icon-sm" onClick={() => onPageChange(totalPages)} disabled={disableNextPage || !pagination?.totalPages}>
+              <Button variant="outline" size="icon-sm" onClick={() => onPageChange(totalPages)} disabled={disableNextPage || pagination?.totalPages === null}>
                 <ChevronsRight className="size-4" />
               </Button>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

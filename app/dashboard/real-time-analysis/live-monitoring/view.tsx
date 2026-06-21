@@ -1,9 +1,22 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { X } from "lucide-react"
 import MapWrapper from "@/components/map-wrapper"
 import { EarthquakeCardList } from "@/components/card-detail-earthquake"
-import { createEarthquakeMapPoints, getEarthquakeLocation, getEarthquakeRecordId, type EarthquakeRecord } from "@/lib/earthquake"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+    createEarthquakeMapPoints,
+    getEarthquakeRecordId,
+    getEarthquakeRiskLevel,
+    type EarthquakeRecord,
+} from "@/lib/earthquake"
+import { cn } from "@/lib/utils"
+
+type RiskLevelFilter = "all" | "Rendah" | "Sedang" | "Tinggi" | "Ekstrem"
+type RiskLevel = Exclude<RiskLevelFilter, "all">
 
 export default function LiveMonitoring() {
     const [earthquakes, setEarthquakes] = useState<EarthquakeRecord[]>([])
@@ -11,6 +24,28 @@ export default function LiveMonitoring() {
     const [error, setError] = useState<string | null>(null)
     const [selectedEarthquake, setSelectedEarthquake] = useState<EarthquakeRecord | null>(null)
     const [selectionToken, setSelectionToken] = useState(0)
+    const [riskLevelFilter, setRiskLevelFilter] = useState<RiskLevelFilter>("all")
+
+    const riskLevelOptions: Array<{ value: RiskLevelFilter; label: string }> = [
+        { value: "all", label: "Semua" },
+        { value: "Rendah", label: "Rendah" },
+        { value: "Sedang", label: "Sedang" },
+        { value: "Tinggi", label: "Tinggi" },
+        { value: "Ekstrem", label: "Ekstrem" },
+    ]
+
+    const riskLevelBadgeClassName = (level: RiskLevel) => {
+        switch (level) {
+            case "Rendah":
+                return "border border-green-200 bg-green-50 text-green-700 hover:bg-green-50"
+            case "Sedang":
+                return "border border-yellow-200 bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
+            case "Tinggi":
+                return "border border-red-200 bg-red-50 text-red-700 hover:bg-red-50"
+            case "Ekstrem":
+                return "border border-red-600 bg-red-600 text-white hover:bg-red-700"
+        }
+    }
 
     useEffect(() => {
         const controller = new AbortController()
@@ -66,20 +101,110 @@ export default function LiveMonitoring() {
     }, [])
 
     const selectedId = selectedEarthquake ? getEarthquakeRecordId(selectedEarthquake) : null
-    const mapPoints = useMemo(() => createEarthquakeMapPoints(earthquakes), [earthquakes])
+    const riskLevelCounts = useMemo(() => {
+        return earthquakes.reduce<Record<string, number>>((accumulator, record) => {
+            const riskLevel = getEarthquakeRiskLevel(record)
+            accumulator[riskLevel] = (accumulator[riskLevel] ?? 0) + 1
+            return accumulator
+        }, {})
+    }, [earthquakes])
+
+    const filteredEarthquakes = useMemo(() => {
+        if (riskLevelFilter === "all") {
+            return earthquakes
+        }
+
+        return earthquakes.filter((record) => getEarthquakeRiskLevel(record) === riskLevelFilter)
+    }, [earthquakes, riskLevelFilter])
+
+    const mapPoints = useMemo(() => createEarthquakeMapPoints(filteredEarthquakes), [filteredEarthquakes])
+
+    useEffect(() => {
+        if (filteredEarthquakes.length === 0) {
+            if (selectedEarthquake !== null) {
+                setSelectedEarthquake(null)
+                setSelectionToken((current) => current + 1)
+            }
+
+            return
+        }
+
+        if (!selectedEarthquake || !filteredEarthquakes.includes(selectedEarthquake)) {
+            setSelectedEarthquake(filteredEarthquakes[0])
+            setSelectionToken((current) => current + 1)
+        }
+    }, [filteredEarthquakes, selectedEarthquake])
 
     const handleSelectEarthquake = (record: EarthquakeRecord) => {
         setSelectedEarthquake(record)
         setSelectionToken((current) => current + 1)
     }
 
+    const hasActiveFilter = riskLevelFilter !== "all"
+    const filteredCount = filteredEarthquakes.length
+
     return (
         <div className="flex h-auto w-full flex-1 flex-col font-sans dark:border-gray-800 dark:bg-black">
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">Real Time Map Analysis</h1>
+            <div className="flex flex-col gap-4 pb-2">
+              <h1 className="text-2xl font-bold text-foreground">Pantauan Gempa Terkini</h1>
+              {/* <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p> */}
+            </div>
+            <div className="flex flex-col items-start gap-3 text-sm text-muted-foreground">
+                <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>Total Gempa: {earthquakes.length}</span>
+                    </Badge>
+                    <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
+                        <span>Hasil Filter: {filteredCount}</span>
+                    </Badge>
+                </div>
+            </div>
+            <div className="mt-3 flex flex-col gap-3">
+                <div className="flex flex-col gap-2 lg:flex-col lg:items-start lg:justify-start">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold tracking-wide text-foreground">Filter Gempa Berdasarkan Risiko</label>
+                        <Tabs defaultValue="all" value={riskLevelFilter} onValueChange={(value) => setRiskLevelFilter(value as RiskLevelFilter)}>
+                            <TabsList className="h-auto w-full flex-nowrap overflow-x-auto justify-start gap-1 sm:w-fit pb-1">
+                                {riskLevelOptions.map((option) => (
+                                    <TabsTrigger key={option.value} value={option.value} className="min-w-0 flex-1 sm:flex-none">
+                                        {option.label}
+                                        {option.value !== "all" && riskLevelCounts[option.value] !== undefined && (
+                                            <Badge
+                                                variant="outline"
+                                                className={cn("ml-2 h-5 rounded-full px-2 text-[10px]", riskLevelBadgeClassName(option.value))}
+                                            >
+                                                {riskLevelCounts[option.value] ?? 0}
+                                            </Badge>
+                                        )}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                </div>
+
+                {hasActiveFilter ? (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <Badge variant="outline" className="border border-slate-200 bg-slate-50 text-slate-700">
+                            <span>Risk Level: {riskLevelFilter}</span>
+                        </Badge>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-8 gap-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => setRiskLevelFilter("all")}
+                        >
+                            <X className="size-4" />
+                            Reset filter
+                        </Button>
+                    </div>
+                ) : null}
+            </div>
 
             <div className="mt-4 space-y-4">
-                <div className="flex h-[calc(100vh-180px)] w-full flex-row gap-4">
-                    <div className="mt-4 flex w-1/3 flex-col gap-4 overflow-y-auto pr-2">
+                <div className="flex min-h-[680px] w-full flex-col gap-4 lg:h-[calc(100vh-180px)] lg:min-h-0 lg:flex-row">
+                    <div className="mt-4 flex max-h-[420px] w-full flex-col gap-4 overflow-y-auto pr-2 lg:max-h-none lg:w-1/3">
                         {loading ? (
                             <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 p-6 text-sm text-slate-500">
                                 Memuat data gempa...
@@ -88,16 +213,20 @@ export default function LiveMonitoring() {
                             <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
                                 {error}
                             </div>
+                        ) : filteredEarthquakes.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-slate-300 bg-white/80 p-6 text-sm text-slate-500">
+                                Tidak ada data gempa untuk filter yang dipilih.
+                            </div>
                         ) : (
                             <EarthquakeCardList
-                                earthquakes={earthquakes}
+                                earthquakes={filteredEarthquakes}
                                 selectedId={selectedId}
                                 onSelect={handleSelectEarthquake}
                             />
                         )}
                     </div>
 
-                    <div className="mt-4 flex min-h-0 w-2/3 flex-col gap-4">
+                    <div className="relative z-0 mt-4 flex min-h-[420px] w-full flex-col gap-4 lg:min-h-0 lg:w-2/3">
                         <div className="w-full flex-1 overflow-hidden rounded-2xl border border-slate-200 shadow-lg">
                             <MapWrapper
                                 key={selectionToken}

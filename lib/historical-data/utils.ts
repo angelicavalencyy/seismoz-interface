@@ -1,6 +1,3 @@
-import type { EarthquakeRecord } from "@/lib/earthquake"
-import { preferredColumns } from "./constants"
-
 const MONTH_LOOKUP: Record<string, string> = {
   jan: "01",
   january: "01",
@@ -29,7 +26,7 @@ const MONTH_LOOKUP: Record<string, string> = {
   december: "12",
 }
 
-function toDateKey(sourceText: string): string {
+export function toDateKey(sourceText: string): string {
   const normalizedText = sourceText.trim()
 
   if (!normalizedText) {
@@ -72,6 +69,50 @@ export function getTodayDateKey(): string {
   return `${year}-${month}-${day}`
 }
 
+export function normalizeRiskLevelLabel(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "Tidak diketahui"
+  }
+
+  const text = String(value).trim()
+
+  if (!text) {
+    return "Tidak diketahui"
+  }
+
+  const normalized = text.toLowerCase().replace(/\s+/g, " ")
+
+  if (normalized === "rendah" || normalized === "low" || normalized === "low risk" || normalized === "1") {
+    return "Rendah"
+  }
+
+  if (
+    normalized === "sedang" ||
+    normalized === "medium" ||
+    normalized === "moderate" ||
+    normalized === "menengah" ||
+    normalized === "2"
+  ) {
+    return "Sedang"
+  }
+
+  if (normalized === "tinggi" || normalized === "high" || normalized === "high risk" || normalized === "3") {
+    return "Tinggi"
+  }
+
+  if (
+    normalized === "ekstrem" ||
+    normalized === "ekstrim" ||
+    normalized === "extreme" ||
+    normalized === "extreme risk" ||
+    normalized === "4"
+  ) {
+    return "Ekstrem"
+  }
+
+  return text
+}
+
 export function formatCellValue(value: unknown): string {
   if (value === null || value === undefined || value === "") {
     return "-"
@@ -90,30 +131,4 @@ export function formatCellValue(value: unknown): string {
   }
 
   return JSON.stringify(value)
-}
-
-export function getRecordDateKey(record: EarthquakeRecord): string {
-  const sourceText =
-    record.created_at?.trim() ||
-    record.tanggal?.trim() ||
-    record.DateTime?.trim() ||
-    record.Tanggal?.trim() ||
-    ""
-
-  return toDateKey(sourceText)
-}
-
-export function getTableColumns(records: EarthquakeRecord[]): string[] {
-  const keys = new Set<string>()
-
-  for (const record of records) {
-    Object.keys(record).forEach((key) => keys.add(key))
-  }
-
-  return [
-    ...preferredColumns.filter((key) => keys.has(key)),
-    ...Array.from(keys)
-      .filter((key) => !preferredColumns.includes(key as (typeof preferredColumns)[number]))
-      .sort(),
-  ]
 }

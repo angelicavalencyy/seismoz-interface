@@ -2,25 +2,28 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { EarthquakeRecord } from "../../../../lib/earthquake"
-import { createEarthquakeMapPoints, getEarthquakeRecordId } from "../../../../lib/earthquake"
+import { createEarthquakeMapPoints, getEarthquakeRecordId, getEarthquakeRiskLevel } from "../../../../lib/earthquake"
 import { HistoricalControls } from "../../../../components/table-history-analysis-real-time/historical-controls"
+import type { RiskLevelFilter } from "../../../../components/table-history-analysis-real-time/historical-controls"
 import { HistoricalMapPanel } from "../../../../components/table-history-analysis-real-time/historical-map-panel"
 import { HistoricalTable } from "../../../../components/table-history-analysis-real-time/historical-table"
-import { getRecordDateKey, getTodayDateKey } from "../../../../lib/historical-monitoring/utils"
+import { getRecordDateKey } from "../../../../lib/historical-monitoring/utils"
+import type { RiskMapPagination } from "@/lib/historical-data/table-api"
 
 type ViewMode = "table" | "map"
 
 export default function HistoricalMonitoring() {
-  const todayDateKey = getTodayDateKey()
   const [records, setRecords] = useState<EarthquakeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedDate, setSelectedDate] = useState(todayDateKey)
+  const [selectedDate, setSelectedDate] = useState("")
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [selectedEarthquake, setSelectedEarthquake] = useState<EarthquakeRecord | null>(null)
   const [selectionToken, setSelectionToken] = useState(0)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
+  const [rowsPerPage, setRowsPerPage] = useState(20)
   const [page, setPage] = useState(1)
+  const [riskLevelFilter, setRiskLevelFilter] = useState<RiskLevelFilter>("all")
+  const [pagination, setPagination] = useState<RiskMapPagination | undefined>(undefined)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -31,7 +34,21 @@ export default function HistoricalMonitoring() {
         setLoading(true)
         setError(null)
 
-        const response = await fetch("/api/realtime/history", {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(rowsPerPage),
+        })
+
+        if (selectedDate) {
+          params.set("date", selectedDate)
+          params.set("tanggal", selectedDate)
+        }
+
+        if (riskLevelFilter !== "all") {
+          params.set("risk_level", riskLevelFilter)
+        }
+
+        const response = await fetch(`/api/realtime/history?${params.toString()}`, {
           signal: controller.signal,
           cache: "no-store",
         })
@@ -40,7 +57,7 @@ export default function HistoricalMonitoring() {
           throw new Error(`Failed to load historical data (${response.status})`)
         }
 
-        const payload = (await response.json()) as { earthquakes?: EarthquakeRecord[] }
+        const payload = (await response.json()) as { earthquakes?: EarthquakeRecord[]; pagination?: RiskMapPagination }
 
         if (!isActive) {
           return
@@ -48,6 +65,7 @@ export default function HistoricalMonitoring() {
 
         const nextRecords = payload.earthquakes ?? []
         setRecords(nextRecords)
+        setPagination(payload.pagination)
         setSelectedEarthquake(nextRecords[0] ?? null)
         setSelectionToken((current) => current + 1)
       } catch (fetchError) {
@@ -73,19 +91,27 @@ export default function HistoricalMonitoring() {
       isActive = false
       controller.abort()
     }
-  }, [])
+  }, [page, rowsPerPage, selectedDate, riskLevelFilter])
 
   const filteredRecords = useMemo(() => {
-    if (!selectedDate) {
-      return records
+    let result = records
+
+    // Filter by date
+    if (selectedDate) {
+      result = result.filter((record) => getRecordDateKey(record) === selectedDate)
     }
 
-    return records.filter((record) => getRecordDateKey(record) === selectedDate)
-  }, [records, selectedDate])
+    // Filter by risk level
+    if (riskLevelFilter !== "all") {
+      result = result.filter((record) => getEarthquakeRiskLevel(record) === riskLevelFilter)
+    }
+
+    return result
+  }, [records, selectedDate, riskLevelFilter])
 
   useEffect(() => {
     setPage(1)
-  }, [selectedDate])
+  }, [selectedDate, riskLevelFilter])
 
   useEffect(() => {
     if (filteredRecords.length === 0) {
@@ -112,7 +138,7 @@ export default function HistoricalMonitoring() {
   const mapPoints = useMemo(() => createEarthquakeMapPoints(filteredRecords), [filteredRecords])
   const selectedDateLabel = selectedDate ? new Date(`${selectedDate}T00:00:00`).toLocaleDateString("id-ID") : "Semua tanggal"
 
-  const showResetDate = selectedDate !== todayDateKey
+  const showResetDate = Boolean(selectedDate)
 
   const handleSelectEarthquake = (record: EarthquakeRecord) => {
     setSelectedEarthquake(record)
@@ -131,18 +157,20 @@ export default function HistoricalMonitoring() {
           <HistoricalControls
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
-            onResetDate={() => setSelectedDate(todayDateKey)}
+            onResetDate={() => setSelectedDate("")}
             showResetDate={showResetDate}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
-            totalCount={records.length}
+            totalCount={pagination?.total ?? records.length}
             filteredCount={filteredRecords.length}
             selectedDateLabel={selectedDateLabel}
+            riskLevelFilter={riskLevelFilter}
+            onRiskLevelFilterChange={setRiskLevelFilter}
           />
         </div>
       </div>
 
-      <div className="mt-4 min-h-0 min-w-0 flex-1 overflow-visible">
+      <div className="mt-4 min-h-0 min-w-0 flex-1 overflow-visible relative z-0">
         {loading ? (
           <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-background p-6 text-sm text-muted-foreground">
             Memuat data historical...
@@ -156,6 +184,8 @@ export default function HistoricalMonitoring() {
             onRowsPerPageChange={handleRowsPerPageChange}
             page={page}
             onPageChange={setPage}
+            pagination={pagination}
+            serverPaginated={!(Boolean(selectedDate) || riskLevelFilter !== "all")}
           />
         ) : (
           <HistoricalMapPanel

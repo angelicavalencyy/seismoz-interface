@@ -18,7 +18,7 @@ function TagCard({
         <Card className="h-full rounded-lg border border-slate-100 bg-white">
             <CardHeader className="flex h-full flex-col items-start gap-2 p-4">
                 <div className="flex gap-3">
-                    <div className="flex shrink-0 items-center justify-center text-purple-600">
+                    <div className="flex shrink-0 items-center justify-center text-blue-600">
                         {icon}
                     </div>
                     <CardTitle className="w-full text-sm font-semibold text-slate-900">{title}</CardTitle>
@@ -56,18 +56,57 @@ export function HeaderLocation({
     }
 
     const [liveTime, setLiveTime] = useState(currentTime ?? "10:09:20 WIB")
+    const [liveDate, setLiveDate] = useState(currentDate ?? "Mencari tanggal...")
+    const [liveLocation, setLiveLocation] = useState(locationName ?? "Mencari lokasi...")
+    const [liveCity, setLiveCity] = useState(cityName ?? "Mencari kota...")
 
     useEffect(() => {
         setLiveTime(formatCurrentTime())
+
+        const now = new Date()
+        const dateText = new Intl.DateTimeFormat("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        }).format(now)
+        setLiveDate(currentDate ?? dateText)
 
         const timer = window.setInterval(() => {
             setLiveTime(formatCurrentTime())
         }, 1000)
 
+        if (!locationName || !cityName) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        try {
+                            const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${position.coords.latitude}&longitude=${position.coords.longitude}&localityLanguage=id`);
+                            const data = await res.json();
+                            const city = data.city || data.locality || "Lokasi ditemukan";
+                            const prov = data.principalSubdivision || "";
+                            setLiveCity(cityName ?? city);
+                            setLiveLocation(locationName ?? `${city}${prov ? `, ${prov}` : ""}`);
+                        } catch (e) {
+                            const fallback = `${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
+                            setLiveCity(cityName ?? fallback);
+                            setLiveLocation(locationName ?? fallback);
+                        }
+                    },
+                    () => {
+                        setLiveCity(cityName ?? "Akses lokasi ditolak");
+                        setLiveLocation(locationName ?? "Akses lokasi ditolak");
+                    }
+                );
+            } else {
+                setLiveCity(cityName ?? "Geolokasi tidak didukung");
+                setLiveLocation(locationName ?? "Geolokasi tidak didukung");
+            }
+        }
+
         return () => {
             window.clearInterval(timer)
         }
-    }, [])
+    }, [cityName, locationName, currentDate])
 
     return (
         <div className="grid w-full grid-cols-1 gap-5 xl:grid-cols-2">
@@ -80,13 +119,13 @@ export function HeaderLocation({
                     <TagCard
                         icon={<LocateFixed className="size-4" />}
                         title="Titik aktif"
-                        description={locationName ?? "Surabaya, Jawa Timur"}
+                        description={liveLocation}
                     />
 
                     <TagCard
                         icon={<MapPinned className="size-4" />}
                         title="Kabupaten / Kota"
-                        description={cityName ?? "Surabaya"}
+                        description={liveCity}
                     />
                 </div>
             </div>
@@ -100,7 +139,7 @@ export function HeaderLocation({
                     <TagCard
                         icon={<Calendar className="size-4" />}
                         title="Tanggal"
-                        description={currentDate ?? "12 Apr 2026"}
+                        description={liveDate}
                     />
 
                     <TagCard

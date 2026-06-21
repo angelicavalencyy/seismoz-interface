@@ -2,7 +2,7 @@ import { normalizeRiskMapGeojsonFeatures } from "@/lib/historical-data/geojson-a
 
 export const dynamic = "force-dynamic"
 
-const GEOJSON_URL = "http://localhost:8000/api/risk-map/geojson"
+const GEOJSON_URL = "https://earthquakes-model-api.onrender.com/api/kmed/risk-map"
 
 async function fetchRiskMapGeojsonSource() {
   const response = await fetch(GEOJSON_URL, {

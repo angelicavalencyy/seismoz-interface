@@ -7,10 +7,11 @@ import {
 export const dynamic = "force-dynamic"
 
 const EARTHQUAKE_URLS = [
-  "http://localhost:8000/api/realtime/auto",
-  "http://localhost:8000/api/realtime/history",
-  "http://localhost:8000/api/risk-map/geojson",
-  "http://localhost:8000/api/risk-map/table",
+  "https://earthquakes-model-api.onrender.com/api/realtime/auto",
+  "https://earthquakes-model-api.onrender.com/api/realtime/history",
+  // "https://earthquakes-model-api.onrender.com/api/risk-map/geojson",
+  "https://earthquakes-model-api.onrender.com/api/risk-map/table",
+  "https://earthquakes-model-api.onrender.com/api/kmed/risk-map"
 ]
 
 async function fetchEarthquakeSource(url: string) {

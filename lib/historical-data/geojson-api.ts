@@ -1,4 +1,4 @@
-import { toDateKey } from "../utils"
+import { normalizeRiskLevelLabel, toDateKey } from "./utils"
 import type { RiskMapTableRecord } from "./table-api"
 
 export type RiskMapGeojsonFeature = {
@@ -123,7 +123,7 @@ export function getRiskMapGeojsonFeatureName(feature: RiskMapGeojsonFeature): st
 export function getRiskMapGeojsonFeatureRiskLevel(feature: RiskMapGeojsonFeature): string {
   const record = feature.properties
 
-  return (record?.risk_level ?? record?.Risk_Level ?? "Tidak diketahui").trim()
+  return normalizeRiskLevelLabel(record?.risk_level ?? record?.Risk_Level)
 }
 
 export function getRiskMapGeojsonFeatureRiskScore(feature: RiskMapGeojsonFeature): number | null {

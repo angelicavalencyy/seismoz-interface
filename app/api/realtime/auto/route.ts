@@ -2,7 +2,7 @@ import { getStaticEarthquakeRecords, normalizeEarthquakeRecords } from "@/lib/ea
 
 export const dynamic = "force-dynamic"
 
-const AUTO_URL = "http://localhost:8000/api/realtime/auto"
+const AUTO_URL = "https://earthquakes-model-api.onrender.com/api/realtime/auto"
 
 async function fetchAutoSource() {
   const response = await fetch(AUTO_URL, {
