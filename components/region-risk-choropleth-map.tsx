@@ -86,7 +86,7 @@ function buildRegionRiskTooltipHtml(feature: RiskMapGeojsonFeature): string {
 
   return `
     <div class="w-[260px] max-w-[260px] space-y-2 rounded-xl border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg shadow-black/5 relative z-0">
-      <div class="mb-4 text-xs font-semibold uppercase tracking-wider text-foreground">Gempa November 2001 - Februari 2026</div>  
+      <div class="mb-4 whitespace-normal break-words text-sm font-semibold uppercase leading-tight tracking-wider text-foreground">Gempa November 2001 - Februari 2026</div>  
       <div class="flex items-start justify-between gap-2">
         <p class="text-[10px] font-medium uppercase tracking-wide text-primary">Region Risk</p>
         <span class="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${badgeClassName}">
