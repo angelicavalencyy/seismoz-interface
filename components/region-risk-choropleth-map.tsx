@@ -87,7 +87,10 @@ function buildRegionRiskTooltipHtml(feature: RiskMapGeojsonFeature): string {
   return `
     <div class="w-[260px] max-w-[260px] space-y-2 rounded-xl border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg shadow-black/5 relative z-0">
       <div class="flex items-start justify-between gap-2">
-        <p class="text-[10px] font-medium uppercase tracking-wide text-primary">Region Risk</p>
+        <div class="flex flex-col gap-0.5">
+          <span class="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Gempa 2001-2025</span>
+          <p class="text-[10px] font-medium uppercase tracking-wide text-primary">Region Risk</p>
+        </div>
         <span class="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${badgeClassName}">
           Risiko Ancaman ${riskLevel}
         </span>
@@ -101,18 +104,18 @@ function buildRegionRiskTooltipHtml(feature: RiskMapGeojsonFeature): string {
           <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(luasWilayah)} km²</span>
         </div>
         <div class="mt-1 flex items-start justify-between gap-3">
-          <span class="text-muted-foreground">Frekuensi gempa</span>
+          <span class="text-muted-foreground">Jumlah kejadian</span>
           <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(frekuensi)}</span>
         </div>
       </div>
 
       <div class="rounded-lg border border-dashed border-border/80 bg-background/70 p-2.5 text-[11px]">
         <div class="flex items-start justify-between gap-3">
-          <span class="text-muted-foreground">Mag rata-rata</span>
+          <span class="text-muted-foreground">Magnitudo rata-rata</span>
           <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(magMean)}</span>
         </div>
         <div class="mt-1 flex items-start justify-between gap-3">
-          <span class="text-muted-foreground">Mag maksimal</span>
+          <span class="text-muted-foreground">Magnitudo maksimal</span>
           <span class="max-w-[140px] text-right font-medium leading-tight text-popover-foreground">${formatCellValue(magMax)}</span>
         </div>
         <div class="mt-1 flex items-start justify-between gap-3">
