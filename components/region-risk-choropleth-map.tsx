@@ -63,7 +63,7 @@ function getFillColor(feature: RiskMapGeojsonFeature): string {
 }
 
 function buildRegionRiskTooltipHtml(feature: RiskMapGeojsonFeature): string {
-  const title = getRiskMapGeojsonFeatureName(feature)
+  const title = getRiskMapGeojsonFeatureName(feature).replace(/([a-z])([A-Z])/g, '$1 $2')
   const riskLevel = getRiskMapTableRiskLevel((feature.properties ?? {}) as RiskMapTableRecord)
   const record = (feature.properties ?? {}) as RiskMapTableRecord
 
@@ -86,11 +86,9 @@ function buildRegionRiskTooltipHtml(feature: RiskMapGeojsonFeature): string {
 
   return `
     <div class="w-[260px] max-w-[260px] space-y-2 rounded-xl border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg shadow-black/5 relative z-0">
+      <div class="mb-4 text-xs font-semibold uppercase tracking-wider text-foreground">Gempa November 2001 - Februari 2026</div>  
       <div class="flex items-start justify-between gap-2">
-        <div class="flex flex-col gap-0.5">
-          <span class="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">Gempa 2001-2025</span>
-          <p class="text-[10px] font-medium uppercase tracking-wide text-primary">Region Risk</p>
-        </div>
+        <p class="text-[10px] font-medium uppercase tracking-wide text-primary">Region Risk</p>
         <span class="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${badgeClassName}">
           Risiko Ancaman ${riskLevel}
         </span>
