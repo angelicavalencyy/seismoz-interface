@@ -205,28 +205,11 @@ export default function HistoricalData() {
               <h1 className="text-2xl font-bold text-foreground">Data Pemetaan Wilayah Risiko Ancaman Gempa</h1>
               {/* <p className="text-sm text-muted-foreground">Peta kerawanan wilayah menggunakan choropleth berdasarkan level dan skor risiko.</p> */}
             </div>
-            <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
+            <label className="text-sm font-semibold tracking-wide text-foreground">Statistik Historis Gempa November 2001 - Februari 2026</label>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <Badge variant="outline" className={cn("border border-blue-200 bg-blue-50 text-blue-700")}>
                 <span>Total Data: {pagination?.total ?? globalTotal}</span>
               </Badge>
-              {Object.entries(globalRiskLevelCounts).map(([level, count]) => {
-                const severity = level === "Ekstrem" ? "darkRed" : level === "Tinggi" ? "red" : level === "Sedang" ? "yellow" : "green"
-                return (
-                  <Badge
-                    key={level}
-                    variant="outline"
-                    className={cn(
-                      severity === "darkRed" && "border-red-600 bg-red-600 text-white",
-                      severity === "red" && "border-red-200 bg-red-50 text-red-700",
-                      severity === "yellow" && "border-yellow-200 bg-yellow-50 text-yellow-700",
-                      severity === "green" && "border-green-200 bg-green-50 text-green-700"
-                    )}
-                  >
-                    <span>{level}: {count}</span>
-                  </Badge>
-                )
-              })}
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold tracking-wide text-foreground">Filter Risk Level</label>

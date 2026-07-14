@@ -21,12 +21,12 @@ type TableColumn = {
 
 const tableColumns: TableColumn[] = [
   { key: "num", label: "No.", widthClass: "w-16", align: "right", sortable: false },
-  { key: "nama_kabupaten", label: "Kabupaten", widthClass: "w-64", sortable: true },
+  { key: "nama_kabupaten", label: "Kabupaten/Kota", widthClass: "w-52", sortable: true },
   { key: "luas_wilayah_km2", label: "Luas Wilayah (km²)", widthClass: "w-48", align: "right", sortable: true },
-  { key: "frekuensi_gempa", label: "Frekuensi Gempa", widthClass: "w-48", align: "right", sortable: true },
-  { key: "mag_max", label: "Mag Maks", widthClass: "w-36", align: "right", sortable: true },
-  { key: "mag_mean", label: "Rata-rata Mag", widthClass: "w-40", align: "right", sortable: true },
-  { key: "depth_mean", label: "Rata-rata Kedalaman", widthClass: "w-48", align: "right", sortable: true },
+  { key: "frekuensi_gempa", label: "Jumlah Gempa", widthClass: "w-48", align: "right", sortable: true },
+  { key: "mag_max", label: "Magnitudo Maks", widthClass: "w-48", align: "right", sortable: true },
+  { key: "mag_mean", label: "Rata-rata Magnitudo", widthClass: "w-48", align: "right", sortable: true },
+  { key: "depth_mean", label: "Kedalaman Rata-rata", widthClass: "w-48", align: "right", sortable: true },
   { key: "cluster", label: "Klaster", widthClass: "w-28", align: "right", sortable: true },
   { key: "risk_score", label: "Skor Risiko", widthClass: "w-36", align: "right", sortable: true },
   { key: "risk_level", label: "Status Risiko", widthClass: "w-40", sortable: true },

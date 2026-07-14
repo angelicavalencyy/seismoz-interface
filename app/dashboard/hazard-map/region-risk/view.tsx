@@ -132,7 +132,7 @@ export default function RegionRiskMap() {
             </div>
 
             <div className="flex flex-col gap-4  ">
-                <label className="text-sm font-semibold tracking-wide text-foreground">Statistik</label>
+                <label className="text-sm font-semibold tracking-wide text-foreground">Statistik Historis Gempa November 2001 - Februari 2026</label>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <Badge variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                         <span>Total Wilayah: {features.length}</span>
@@ -141,7 +141,7 @@ export default function RegionRiskMap() {
                         <span>Hasil Filter: {filteredFeatures.length}</span>
                     </Badge>
                 </div>
-                <div className="  flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                {/* <div className="  flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     {Object.entries(riskLevelCounts).map(([riskLevel, count]) => (
                         <Badge key={riskLevel} variant="outline" className="border border-blue-200 bg-blue-50 text-blue-700">
                             <span>
@@ -154,7 +154,7 @@ export default function RegionRiskMap() {
                             <span>Skor Rata-rata: {riskScoreSummary.avgScore.toFixed(3)}</span>
                         </Badge>
                     ) : null}
-                </div>
+                </div> */}
             </div>
 
             <div className="   flex flex-col gap-2">
